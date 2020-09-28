@@ -467,12 +467,6 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         // TODO 请求权限操作
     }
 
-    /**
-     * Get Work Service for background work.
-     *
-     * @return class of Work Service for background work.
-     */
-    protected abstract Class<? extends Service> getWorkService();
 
     /**
      * Start Service for background work.

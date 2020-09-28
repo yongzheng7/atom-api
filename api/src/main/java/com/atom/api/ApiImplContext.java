@@ -210,12 +210,6 @@ public interface ApiImplContext {
      */
     void reportException(String tag, Throwable throwable);
 
-    /**
-     * Get Main Fragment Activity Class
-     *
-     * @return class
-     */
-    Class<?> getFragmentActivityClass();
 
     /**
      * Executes the given command at some time in the future.  The command  may execute in a new thread,
