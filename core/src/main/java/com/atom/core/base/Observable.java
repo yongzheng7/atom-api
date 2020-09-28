@@ -3,6 +3,8 @@ package com.atom.core.base;
 import com.atom.api.core.IObservable;
 import com.atom.api.core.IObserver;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -36,6 +38,20 @@ public class Observable<T> implements IObservable<T> {
     public void clearObserver() {
         synchronized (observers) {
             observers.clear();
+        }
+    }
+
+    @Override
+    public Boolean containsObserver(IObserver<T> observer) {
+        synchronized (observers) {
+            return observers.contains(observer);
+        }
+    }
+
+    @Override
+    public Collection<IObserver<T>> getObservers() {
+        synchronized (observers) {
+            return Collections.unmodifiableList(observers);
         }
     }
 
