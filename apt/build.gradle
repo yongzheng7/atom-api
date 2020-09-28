@@ -1,0 +1,11 @@
+apply plugin: 'java-library'
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    api group: 'javax.persistence', name: 'javax.persistence-api', version: '2.2'
+    api group: 'javax.annotation', name: 'javax.annotation-api', version: '1.3.2'
+}
+
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
