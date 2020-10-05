@@ -5,25 +5,22 @@ import com.atom.api.core.IObserver;
 
 import java.util.Collection;
 
-public class AbstractObservable<T> implements IObservable<T> {
+public class ProxyObservable<T, O extends IObserver<T>> implements IObservable<T, O> {
 
-    private final Observable<T> observable;
+    private IObservable<T, O> observable;
 
-    public AbstractObservable() {
-        this(new Observable<T>());
-    }
-
-    public AbstractObservable(Observable<T> observable) {
+    @Override
+    public void setProxy(IObservable<T, O> observable) {
         this.observable = observable;
     }
 
     @Override
-    public void addObserver(IObserver<T> observer) {
+    public void addObserver(O observer) {
         observable.addObserver(observer);
     }
 
     @Override
-    public Boolean removeObserver(IObserver<T> observer) {
+    public Boolean removeObserver(O observer) {
         return observable.removeObserver(observer);
     }
 
@@ -33,12 +30,12 @@ public class AbstractObservable<T> implements IObservable<T> {
     }
 
     @Override
-    public Boolean containsObserver(IObserver<T> observer) {
+    public Boolean containsObserver(O observer) {
         return observable.containsObserver(observer);
     }
 
     @Override
-    public Collection<IObserver<T>> getObservers() {
+    public Collection<O> getObservers() {
         return observable.getObservers();
     }
 

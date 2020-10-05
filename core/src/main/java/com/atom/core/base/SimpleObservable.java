@@ -8,32 +8,32 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-public class Observable<T, O extends IObserver<T>> implements IObservable<T, O> {
+public class SimpleObservable<T> implements IObservable<T, IObserver<T>> {
 
-    private final List<O> observers;
+    private final List<IObserver<T>> observers;
 
-    public Observable(List<O> observers) {
+    public SimpleObservable(List<IObserver<T>> observers) {
         this.observers = observers;
     }
 
-    public Observable() {
-        this(new LinkedList<O>());
+    public SimpleObservable() {
+        this(new LinkedList<IObserver<T>>());
     }
 
     @Override
-    public void setProxy(IObservable<T, O> observable) {
+    public void setProxy(IObservable<T, IObserver<T>> observable) {
         observable.setProxy(this);
     }
 
     @Override
-    public void addObserver(O observer) {
+    public void addObserver(IObserver<T> observer) {
         synchronized (observers) {
             observers.add(observer);
         }
     }
 
     @Override
-    public Boolean removeObserver(O observer) {
+    public Boolean removeObserver(IObserver<T> observer) {
         synchronized (observers) {
             return observers.remove(observer);
         }
@@ -47,14 +47,14 @@ public class Observable<T, O extends IObserver<T>> implements IObservable<T, O> 
     }
 
     @Override
-    public Boolean containsObserver(O observer) {
+    public Boolean containsObserver(IObserver<T> observer) {
         synchronized (observers) {
             return observers.contains(observer);
         }
     }
 
     @Override
-    public Collection<O> getObservers() {
+    public Collection<IObserver<T>> getObservers() {
         synchronized (observers) {
             return Collections.unmodifiableList(observers);
         }
@@ -63,7 +63,7 @@ public class Observable<T, O extends IObserver<T>> implements IObservable<T, O> 
     @Override
     public void notify(T t) {
         synchronized (observers) {
-            for (O observer : observers) {
+            for (IObserver<T> observer : observers) {
                 observer.run(t);
             }
         }

@@ -2,17 +2,19 @@ package com.atom.api.core;
 
 import java.util.Collection;
 
-public interface IObservable<T> {
+public interface IObservable<T, O> {
 
-    void addObserver(IObserver<T> observer);
+    void setProxy(IObservable<T, O> observable);
 
-    Boolean removeObserver(IObserver<T> observer);
+    void addObserver(O observer);
+
+    Boolean removeObserver(O observer);
 
     void clearObserver();
 
-    Boolean containsObserver(IObserver<T> observer) ;
+    Boolean containsObserver(O observer);
 
-    Collection<IObserver<T>> getObservers() ;
+    Collection<O> getObservers();
 
     void notify(T t);
 }
