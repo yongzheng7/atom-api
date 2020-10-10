@@ -1,12 +1,10 @@
 package com.atom.core;
 
-import android.app.Service;
 import android.os.Handler;
 
 import androidx.annotation.NonNull;
 import androidx.multidex.MultiDexApplication;
 
-import com.atom.api.AbstractApiImplContext;
 import com.atom.api.ApiImplContext;
 import com.atom.api.ApiImplContextApplication;
 
@@ -14,7 +12,7 @@ import java.lang.ref.WeakReference;
 
 public abstract class AbstractApplication extends MultiDexApplication implements ApiImplContextApplication {
 
-    protected final Handler mHandler = new Handler(getMainLooper());
+    protected final Handler mHandler = new Handler();
     protected WeakReference<ApiImplContext> ApiImplContextWeakReference = null;
 
     @NonNull

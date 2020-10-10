@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+
 /**
  * Created by HYW on 2017/5/25.
  */
@@ -33,6 +34,7 @@ public abstract class ApiImpls {
     @SuppressWarnings("unchecked")
     public <T> Collection<Class<? extends T>> getApiImpls(Class<T> apiClass) {
         synchronized (mApiImps) {
+            System.out.println("getApiImpls " +mApiImps.size() + "  " + mApiImps);
             return (ApiImps<T>) mApiImps.get(apiClass);
         }
     }

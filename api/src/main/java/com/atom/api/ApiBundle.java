@@ -10,7 +10,7 @@ import java.util.Collection;
  *
  * </pre>
  */
-public interface ApiImplBundle {
+public interface ApiBundle {
 
     /**
      * Get Api Implements class.

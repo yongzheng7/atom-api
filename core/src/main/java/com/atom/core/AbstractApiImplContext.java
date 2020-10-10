@@ -1,10 +1,7 @@
-package com.atom.api;
+package com.atom.core;
 
-import android.Manifest;
 import android.app.Application;
-import android.app.Service;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
@@ -16,6 +13,9 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.atom.api.ApiBundle;
+import com.atom.api.ApiImplContext;
+import com.atom.api.ApiImplContextAware;
 import com.atom.apt.annotation.Impl;
 
 import java.io.IOException;
@@ -36,14 +36,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.regex.Pattern;
 
 /**
- * Load All ApiImpls implements from META DATA it's name start with "com.gpstogis.api.impls."
+ * Load All ApiImpls implements from META DATA it's name start with "com.atom."
  * <p>
  * Created by HYW on 2017/11/10.
  */
 @SuppressWarnings("WeakerAccess")
 public abstract class AbstractApiImplContext implements ApiImplContext {
 
-    public static final String META_DATA_NAME_PREFIX = "com.gpstogis.api.impls.";
+    public static final String META_DATA_NAME_PREFIX = "com.atom.";
     private static final String TAG = "AbstractApiImplContext";
     /**
      * Map of cached data
@@ -56,7 +56,7 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
     private final Collection<String> mEnabledImpls = new Vector<>();
     private final Collection<String> mDisabledImpls = new Vector<>();
     private final Application mApplication;
-    private final List<ApiImplBundle> mApiImpls = new LinkedList<>();
+    private final List<ApiBundle> mApiImpls = new LinkedList<>();
     private final ExecutorService mExecutorService;
     private long mCachesLastCheckTime = System.currentTimeMillis();
     private boolean mIsDebug = false;
@@ -73,9 +73,11 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         Impl impl;
         String name;
         Boolean enabled;
-        for (ApiImplBundle imp : mApiImpls) {
+        for (ApiBundle imp : mApiImpls) {
             impls = imp.getApiImpls(requiredType);
+            Log.e("loadPackages" ,"imp >"+ imp.getClass().getName()) ;
             if (impls != null) {
+                Log.e("loadPackages" ,"imp > impls"+ impls.size()) ;
                 for (Class<? extends T> cls : impls) {
                     impl = cls.getAnnotation(Impl.class);
                     if (impl != null) {
@@ -110,6 +112,7 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
             throw new RuntimeException(e);
         }
         for (String key : appInfo.metaData.keySet()) {
+            Log.e("loadPackages"  ,"key > "+key) ;
             if (!key.startsWith(META_DATA_NAME_PREFIX)) {
                 continue;
             }
@@ -117,15 +120,16 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
             if (classname == null || classname.isEmpty()) {
                 continue;
             }
+            Log.e("loadPackages"  ,"classname > "+classname) ;
             try {
                 Class<?> cls = context.getClassLoader().loadClass(classname);
-                if (ApiImplBundle.class.isAssignableFrom(cls)) {
-                    ApiImplBundle apiImpls = (ApiImplBundle) cls.newInstance();
+                if (ApiBundle.class.isAssignableFrom(cls)) {
+                    ApiBundle apiImpls = (ApiBundle) cls.newInstance();
                     if (apiImpls instanceof ApiImplContextAware) {
                         ((ApiImplContextAware) apiImpls).setApiImplContext(this);
                     }
                     mApiImpls.add(apiImpls);
-                    Log.d(META_DATA_NAME_PREFIX, classname + " succeed");
+                    Log.d("loadPackages", classname + " succeed");
                 } else {
                     throw new RuntimeException(classname + " not implements from ApiImpls");
                 }
@@ -144,27 +148,34 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
      */
     @SuppressWarnings("unchecked")
     public <T> T getApi(Class<T> requiredType) {
+        Log.e("loadPackages" , "getApi 1") ;
         T api = getApi("", requiredType, false);
         if (api != null) {
             return api;
         }
+        Log.e("loadPackages" , "getApi 2") ;
         api = getApi(requiredType.getSimpleName(), requiredType, false);
         if (api != null) {
             return api;
         }
+        Log.e("loadPackages" , "getApi 3") ;
         String key = convertKey("", requiredType);
         synchronized (mSingletonBeans) {
             for (Object obj : mSingletonBeans.values()) {
                 if (requiredType.isInstance(obj)) {
                     api = (T) obj;
+                    Log.e("loadPackages" , "getApi"+key) ;
                     mSingletonBeans.put(key, api);
                     return api;
                 }
             }
+            Log.e("loadPackages" , "getApi 4 "+requiredType.getName()) ;
             api = newApi(requiredType);
             mSingletonBeans.put(key, api);
             //noinspection ConstantConditions
             if (api != null) {
+                Log.e("loadPackages" , "getApi 5") ;
+
                 Impl annotation = getAnnotation(api.getClass(), Impl.class);
                 if (annotation != null && !annotation.name().isEmpty()) {
                     key = convertKey(annotation.name(), requiredType);
@@ -268,12 +279,16 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
 
     @Override
     public <T> T newApi(Class<T> api) {
+        Log.e("loadPackages" , "newApi  1") ;
         Class<? extends T> impl;
         if (Modifier.isAbstract(api.getModifiers())) {
+            Log.e("loadPackages" , "newApi  21") ;
             impl = findApiImpl(null, api, false);
         } else {
+            Log.e("loadPackages" , "newApi  22") ;
             impl = api;
         }
+        Log.e("loadPackages" , "newApi  23") ;
         return createApi(null, impl);
     }
 
@@ -534,18 +549,25 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
     @SuppressWarnings("WeakerAccess")
     @Nullable
     protected <T> T createApi(String name, Class<? extends T> impl) {
+        Log.e("loadPackages" , "createApi  1") ;
         if (impl == null) {
             return null;
         }
+        Log.e("loadPackages" , "createApi  2") ;
+
         T obj = null;
         try {
             obj = impl.newInstance();
+            Log.e("loadPackages" , "createApi  3") ;
         } catch (Exception ex) {
             reportException(TAG, ex);
+            Log.e("loadPackages" , "createApi  4") ;
         }
         if (obj instanceof ApiImplContextAware) {
+            Log.e("loadPackages" , "createApi  41") ;
             ((ApiImplContextAware) obj).setApiImplContext(this);
         }
+        Log.e("loadPackages" , "createApi  5") ;
         return obj;
     }
 

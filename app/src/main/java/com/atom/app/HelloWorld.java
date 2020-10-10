@@ -12,6 +12,6 @@ public class HelloWorld implements Hello{
 
     @Override
     public void hello() {
-        Log.e("HelloWorld" , filed + name) ;
+        Log.e("loadPackages" ,"HelloWorld >"+filed + name) ;
     }
 }

@@ -1,5 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.atom.core">
 
-    /
+    <application>
+        <meta-data
+            android:name="com.atom.core"
+            android:value="com.atom.core.ApiBundleImpls" />
+    </application>
 </manifest>
