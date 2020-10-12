@@ -46,6 +46,7 @@ dependencies {
 
     implementation project(':api')
     implementation project(':core')
+    implementation project(':gif')
 
     implementation project(':apt')
     annotationProcessor project(':apt')

@@ -1,6 +1,7 @@
 package com.atom.core.ui;
 
 import android.app.Activity;
+import android.view.View;
 
 import androidx.fragment.app.Fragment;
 
@@ -13,6 +14,14 @@ public abstract class AbstractFragment extends Fragment implements ActivityApi.O
     private ApiImplContext mApiImplContext;
 
     public AbstractFragment() {
+    }
+
+    protected <T extends View> T findViewById(int res) {
+        View view = getView();
+        if (view != null) {
+            return view.findViewById(res);
+        }
+        return null;
     }
 
     /**

@@ -3,7 +3,6 @@ package com.atom.core.ui;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -19,33 +18,16 @@ import com.atom.api.ApiImplContext;
 import com.atom.api.ApiImplContextApplication;
 import com.atom.api.core.ui.ActivityApi;
 
-
-/**
- * Created by HYW on 2017/3/14.
- */
 @SuppressWarnings("unused")
 public abstract class AbstractActivity extends FragmentActivity implements ActivityApi {
     public static final String EXTRA_FRAGMENT_CLASS_NAME = "activity.fragment.classname";
     public static final String EXTRA_REQUEST_PERMISSIONS = "activity.request.permissions";
-    public static final int RC_REQUEST_PERMISSIONS = 101;
 
-    private static final int ID_FRAGMENT = android.R.id.widget_frame;
-    private static final int ID_LAYOUT = android.R.id.background;
-    protected static final String SPKEY_KEEP_SCREEN_ON = "KeepScreenOn";
-    protected static final String SPKEY_APP_VERSION_CODE = "AppVersion";
-
-    private String TAG = getClass().getName();
+    private final String TAG = getClass().getName();
 
     public AbstractActivity() {
     }
 
-    protected abstract String getAppPackageName();
-
-    /**
-     * Get the singleton ApiImplContext object.
-     *
-     * @return object of ApiImplContext, else null.
-     */
     @Override
     public ApiImplContext apiImplContext() {
         Context context = this.getApplicationContext();
@@ -74,62 +56,28 @@ public abstract class AbstractActivity extends FragmentActivity implements Activ
         }
     }
 
+    protected abstract int getFrameLayout() ;
 
-    /**
-     * Load a {@link Fragment} to {@link Activity}
-     */
     @Override
     public void loadFragment(Fragment fragment, boolean addToBackStack) {
-        // Log.e("AbstractActivity.loadFragment", fragment.getClass().getName());
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.replace(ID_FRAGMENT, fragment, fragment.getClass().getName());
+        Fragment fragmentById = fragmentManager.findFragmentById(getFrameLayout());
+        if (fragmentById == null) {
+            fragmentTransaction.add(getFrameLayout(), fragment, fragment.getClass().getName());
+        } else {
+            fragmentTransaction.replace(getFrameLayout(), fragment, fragment.getClass().getName());
+        }
         if (addToBackStack) {
             fragmentTransaction.addToBackStack(fragment.getClass().getName());
         }
         fragmentTransaction.commit();
     }
 
-
-    /**
-     * Initial Setting
-     *
-     * @param newVersion app version
-     * @return true if succeed, else false.
-     */
-    @SuppressWarnings("unused")
-    protected boolean onInitialSetting(long newVersion) {
-        return true;
-    }
-
-    /**
-     * Upgrade Setting
-     *
-     * @param oldVersion oldVersion
-     * @param newVersion newVersion
-     * @return true if succeed, else false.
-     */
-    @SuppressWarnings("unused")
-    protected boolean onUpgradeSetting(long oldVersion, long newVersion) {
-        return true;
-    }
-
-    /**
-     * Downgrade Setting
-     *
-     * @param oldVersion oldVersion
-     * @param newVersion newVersion
-     * @return true if succeed, else false.
-     */
-    @SuppressWarnings("unused")
-    protected boolean onDowngradeSetting(long oldVersion, long newVersion) {
-        return true;
-    }
-
     @Override
     public void onBackPressed() {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        Fragment fragment = fragmentManager.findFragmentById(ID_FRAGMENT);
+        Fragment fragment = fragmentManager.findFragmentById(getFrameLayout());
         if (fragment instanceof OnBackPressedListener) {
             OnBackPressedListener listener = (OnBackPressedListener) fragment;
             if (listener.onBackPressed()) {
@@ -137,17 +85,16 @@ public abstract class AbstractActivity extends FragmentActivity implements Activ
             }
         }
         super.onBackPressed();
-        fragment = fragmentManager.findFragmentById(ID_FRAGMENT);
+        fragment = fragmentManager.findFragmentById(getFrameLayout());
         if (fragment == null) {
             finish();
         }
     }
 
-
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        Fragment fragment = fragmentManager.findFragmentById(ID_FRAGMENT);
+        Fragment fragment = fragmentManager.findFragmentById(getFrameLayout());
         if (fragment instanceof OnKeyPressedListener) {
             OnKeyPressedListener listener = (OnKeyPressedListener) fragment;
             if (listener.onKeyDown(keyCode, event)) {
@@ -170,7 +117,7 @@ public abstract class AbstractActivity extends FragmentActivity implements Activ
     @Override
     public boolean onKeyLongPress(int keyCode, KeyEvent event) {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        Fragment fragment = fragmentManager.findFragmentById(ID_FRAGMENT);
+        Fragment fragment = fragmentManager.findFragmentById(getFrameLayout());
         if (fragment instanceof OnKeyPressedListener) {
             OnKeyPressedListener listener = (OnKeyPressedListener) fragment;
             if (listener.onKeyLongPress(keyCode, event)) {
@@ -183,7 +130,7 @@ public abstract class AbstractActivity extends FragmentActivity implements Activ
     @Override
     public boolean onKeyMultiple(int keyCode, int count, KeyEvent event) {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        Fragment fragment = fragmentManager.findFragmentById(ID_FRAGMENT);
+        Fragment fragment = fragmentManager.findFragmentById(getFrameLayout());
         if (fragment instanceof OnKeyPressedListener) {
             OnKeyPressedListener listener = (OnKeyPressedListener) fragment;
             if (listener.onKeyMultiple(keyCode, count, event)) {
@@ -196,7 +143,7 @@ public abstract class AbstractActivity extends FragmentActivity implements Activ
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        Fragment fragment = fragmentManager.findFragmentById(ID_FRAGMENT);
+        Fragment fragment = fragmentManager.findFragmentById(getFrameLayout());
         if (fragment instanceof OnKeyPressedListener) {
             OnKeyPressedListener listener = (OnKeyPressedListener) fragment;
             if (listener.onKeyUp(keyCode, event)) {
@@ -218,7 +165,7 @@ public abstract class AbstractActivity extends FragmentActivity implements Activ
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         FragmentManager fragmentManager = getSupportFragmentManager();
-        Fragment fragment = fragmentManager.findFragmentById(ID_FRAGMENT);
+        Fragment fragment = fragmentManager.findFragmentById(getFrameLayout());
         if (fragment instanceof OnNewIntentListener) {
             OnNewIntentListener listener = (OnNewIntentListener) fragment;
             if (listener.onNewIntent(intent)) {
@@ -246,7 +193,7 @@ public abstract class AbstractActivity extends FragmentActivity implements Activ
     @Override
     public void finish() {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        Fragment fragment = fragmentManager.findFragmentById(ID_FRAGMENT);
+        Fragment fragment = fragmentManager.findFragmentById(getFrameLayout());
         if (fragment instanceof OnFinishListener) {
             OnFinishListener listener = (OnFinishListener) fragment;
             if (!listener.onFinish()) {
@@ -256,23 +203,8 @@ public abstract class AbstractActivity extends FragmentActivity implements Activ
         super.finish();
     }
 
-    private void throwRuntimeException() {
-        throw new RuntimeException();
-    }
-
-    /**
-     * exit app, force finish, don't show exit dialog
-     */
     public void exit() {
         super.finish();
     }
 
-
-    private void checkAppPackageName(RuntimeException ex) {
-        Context context = this;
-        ApplicationInfo applicationInfo = context.getApplicationInfo();
-        if (!applicationInfo.packageName.equals(getAppPackageName())) {
-            throw ex;
-        }
-    }
 }
