@@ -67,40 +67,6 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         loadPackages();
     }
 
-    public <T> Collection<Class<? extends T>> getApiImpls(Class<T> requiredType) {
-        List<Class<? extends T>> apiImpls = new LinkedList<>();
-        Collection<Class<? extends T>> impls;
-        Impl impl;
-        String name;
-        Boolean enabled;
-        for (ApiBundle imp : mApiImpls) {
-            impls = imp.getApiImpls(requiredType);
-            Log.e("loadPackages" ,"imp >"+ imp.getClass().getName()) ;
-            if (impls != null) {
-                Log.e("loadPackages" ,"imp > impls"+ impls.size()) ;
-                for (Class<? extends T> cls : impls) {
-                    impl = cls.getAnnotation(Impl.class);
-                    if (impl != null) {
-                        name = impl.name();
-                        if (!name.isEmpty()) {
-                            enabled = isImplEnabled(name);
-                            if (enabled != null && !enabled) {
-                                continue;
-                            }
-                        }
-                    }
-                    apiImpls.add(cls);
-                }
-            }
-        }
-        return apiImpls;
-    }
-
-    @Override
-    public <T> Class<? extends T> getApiImpl(String name, Class<T> api) {
-        return findApiImpl(name, api, true);
-    }
-
     @SuppressWarnings("WeakerAccess")
     protected void loadPackages() {
         Context context = mApplication;
@@ -139,43 +105,29 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         }
     }
 
-    /**
-     * Get Api Implements default object.
-     *
-     * @param requiredType Api class can't null
-     * @param <T>          Application Programming Interface
-     * @return Api Implements default object
-     */
     @SuppressWarnings("unchecked")
     public <T> T getApi(Class<T> requiredType) {
-        Log.e("loadPackages" , "getApi 1") ;
         T api = getApi("", requiredType, false);
         if (api != null) {
             return api;
         }
-        Log.e("loadPackages" , "getApi 2") ;
         api = getApi(requiredType.getSimpleName(), requiredType, false);
         if (api != null) {
             return api;
         }
-        Log.e("loadPackages" , "getApi 3") ;
         String key = convertKey("", requiredType);
         synchronized (mSingletonBeans) {
             for (Object obj : mSingletonBeans.values()) {
                 if (requiredType.isInstance(obj)) {
                     api = (T) obj;
-                    Log.e("loadPackages" , "getApi"+key) ;
                     mSingletonBeans.put(key, api);
                     return api;
                 }
             }
-            Log.e("loadPackages" , "getApi 4 "+requiredType.getName()) ;
             api = newApi(requiredType);
-            mSingletonBeans.put(key, api);
             //noinspection ConstantConditions
             if (api != null) {
-                Log.e("loadPackages" , "getApi 5") ;
-
+                mSingletonBeans.put(key, api);
                 Impl annotation = getAnnotation(api.getClass(), Impl.class);
                 if (annotation != null && !annotation.name().isEmpty()) {
                     key = convertKey(annotation.name(), requiredType);
@@ -186,13 +138,35 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         return api;
     }
 
-    /**
-     * convert name
-     *
-     * @param name raw name can't null
-     * @param type type can't null
-     * @return bean full name
-     */
+    public <T> Collection<Class<? extends T>> getApiImpls(Class<T> requiredType) {
+        List<Class<? extends T>> apiImpls = new LinkedList<>();
+        Collection<Class<? extends T>> impls;
+        Impl impl;
+        String name;
+        Boolean enabled;
+        for (ApiBundle imp : mApiImpls) {
+            impls = imp.getApiImpls(requiredType);
+            Log.e("loadPackages" ,"imp >"+ imp.getClass().getName()) ;
+            if (impls != null) {
+                Log.e("loadPackages" ,"imp > impls"+ impls.size()) ;
+                for (Class<? extends T> cls : impls) {
+                    impl = cls.getAnnotation(Impl.class);
+                    if (impl != null) {
+                        name = impl.name();
+                        if (!name.isEmpty()) {
+                            enabled = isImplEnabled(name);
+                            if (enabled != null && !enabled) {
+                                continue;
+                            }
+                        }
+                    }
+                    apiImpls.add(cls);
+                }
+            }
+        }
+        return apiImpls;
+    }
+
     @SuppressWarnings("WeakerAccess")
     protected String convertKey(String name, Class<?> type) {
         String key = type.getSimpleName();
@@ -202,14 +176,11 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         return key + "#" + name;
     }
 
-    /**
-     * Get Api Implements object.
-     *
-     * @param name         Api object name.
-     * @param requiredType Api class
-     * @param <T>          Application Programming Interface
-     * @return Api Implements object
-     */
+    @Override
+    public <T> Class<? extends T> getApiImpl(String name, Class<T> api) {
+        return findApiImpl(name, api, true);
+    }
+
     @Override
     public <T> T getApi(String name, Class<T> requiredType) {
         return getApi(name, requiredType, true);
@@ -232,7 +203,6 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
                 }
             }
             T api = createApi(name, impl);
-            //noinspection ConstantConditions
             mSingletonBeans.put(key, api);
             return api;
         }
@@ -279,16 +249,12 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
 
     @Override
     public <T> T newApi(Class<T> api) {
-        Log.e("loadPackages" , "newApi  1") ;
         Class<? extends T> impl;
         if (Modifier.isAbstract(api.getModifiers())) {
-            Log.e("loadPackages" , "newApi  21") ;
             impl = findApiImpl(null, api, false);
         } else {
-            Log.e("loadPackages" , "newApi  22") ;
             impl = api;
         }
-        Log.e("loadPackages" , "newApi  23") ;
         return createApi(null, impl);
     }
 
@@ -383,7 +349,6 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
 
     /**
      * Enable or disable implements by name
-     *
      * @param name   name  of implements
      * @param enable true enable, false disable
      */
@@ -410,7 +375,6 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
 
     /**
      * Return the implements is enabled or not
-     *
      * @param name name of implements
      * @return true or false
      */
@@ -549,25 +513,18 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
     @SuppressWarnings("WeakerAccess")
     @Nullable
     protected <T> T createApi(String name, Class<? extends T> impl) {
-        Log.e("loadPackages" , "createApi  1") ;
         if (impl == null) {
             return null;
         }
-        Log.e("loadPackages" , "createApi  2") ;
-
         T obj = null;
         try {
             obj = impl.newInstance();
-            Log.e("loadPackages" , "createApi  3") ;
         } catch (Exception ex) {
             reportException(TAG, ex);
-            Log.e("loadPackages" , "createApi  4") ;
         }
         if (obj instanceof ApiImplContextAware) {
-            Log.e("loadPackages" , "createApi  41") ;
             ((ApiImplContextAware) obj).setApiImplContext(this);
         }
-        Log.e("loadPackages" , "createApi  5") ;
         return obj;
     }
 
