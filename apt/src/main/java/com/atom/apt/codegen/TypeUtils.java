@@ -172,10 +172,10 @@ public class TypeUtils {
 
     public static boolean hasPublicEmptyDefaultConstructor(TypeElement classElement) {
         for (Element enclosed : classElement.getEnclosedElements()) {
-            if (enclosed.getKind() == ElementKind.CONSTRUCTOR) { // 判断是构造函数
-                ExecutableElement constructorElement = (ExecutableElement) enclosed; // 强转
-                if (constructorElement.getParameters().size() == 0  // 构造函数的 形参 = 0
-                        && constructorElement.getModifiers().contains(Modifier.PUBLIC)// 构造函数的 public 修饰
+            if (enclosed.getKind() == ElementKind.CONSTRUCTOR) {
+                ExecutableElement constructorElement = (ExecutableElement) enclosed;
+                if (constructorElement.getParameters().size() == 0
+                        && constructorElement.getModifiers().contains(Modifier.PUBLIC)
                 ) {
                     return true;
                 }
@@ -189,23 +189,20 @@ public class TypeUtils {
             return true;
         }
         while (true) {
-            List<? extends TypeMirror> interfaces = classElement.getInterfaces(); // 当前的类的实现的接口集合
-            // context.logMessage(Diagnostic.Kind.NOTE, "The class " + classElement.getQualifiedName().toString());
-            if (interfaces.contains(superClassTypeMirror)) { // 当前类实现该接口
+            List<? extends TypeMirror> interfaces = classElement.getInterfaces();
+            context.logMessage(Diagnostic.Kind.NOTE, "\n The class " + classElement.getQualifiedName().toString());
+            if (interfaces.contains(superClassTypeMirror)) {
                 return true;
             }
-            for (TypeMirror typeMirror : interfaces) { // 遍历所有接口
-                // 将自身实现的接口转为TypeElement 在此进行判断
+            for (TypeMirror typeMirror : interfaces) {
                 if (isAssignable(context, (TypeElement) context.getTypeUtils().asElement(typeMirror), superClassTypeMirror)) {
                     return true;
                 }
             }
-            // 获取父类
             TypeMirror superClassType = classElement.getSuperclass();
-            if (superClassType.getKind() == TypeKind.NONE) { // 父类为空
+            if (superClassType.getKind() == TypeKind.NONE) {
                 return false;
             }
-            // 将父类进行替换为当前的类 class 再次进行判断 直到判断有实现关系 即可
             classElement = (TypeElement) context.getTypeUtils().asElement(superClassType);
         }
     }

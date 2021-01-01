@@ -44,8 +44,8 @@ dependencies {
 
     api "com.android.support:multidex:1.0.3"
 
-    implementation project(':api')
+    api project(':api')
 
-    implementation project(':apt')
+    compileOnly project(':apt')
     annotationProcessor project(':apt')
 }

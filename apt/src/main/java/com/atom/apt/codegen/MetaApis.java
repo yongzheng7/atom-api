@@ -1,6 +1,7 @@
 package com.atom.apt.codegen;
 
 import com.atom.apt.annotation.ApiImpls;
+import com.squareup.javapoet.ClassName;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -49,6 +50,7 @@ public class MetaApis {
             String metaModelPackage = ImportContext.qualifier(mQualifiedName);
             // need to generate the body first, since this will also update the required imports which need to
             // be written out first
+            //ClassName pageConfigClassName = ClassName.get(mContext.getElementUtils().getTypeElement(mQualifiedName));
 
             String body = generateBody(apies).toString();
             String fullyQualifiedClassName = getFullyQualifiedClassName(metaModelPackage);
@@ -78,12 +80,8 @@ public class MetaApis {
         PrintWriter pw = null;
         try {
             pw = new PrintWriter(sw);
-            if (mContext.addGeneratedAnnotation()) {
-                pw.println(mContext.writeGeneratedAnnotation(mImportContext));
-            }
-            if (mContext.isAddSuppressWarningsAnnotation()) {
-                pw.println(mContext.writeSuppressWarnings());
-            }
+            pw.println(mContext.writeGeneratedAnnotation(mImportContext));
+            pw.println(mContext.writeSuppressWarnings());
             printClassDeclaration(pw);
             pw.println();
             pw.println("     @SuppressWarnings(\"unchecked\")");

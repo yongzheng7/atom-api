@@ -47,17 +47,11 @@ import javax.tools.Diagnostic;
  * </pre>
  */
 @SupportedOptions({
-        ApiAnnotationProcessor.DEBUG_OPTION,
-        ApiAnnotationProcessor.ADD_GENERATION_DATE,
-        ApiAnnotationProcessor.ADD_GENERATED_ANNOTATION,
-        ApiAnnotationProcessor.ADD_SUPPRESS_WARNINGS_ANNOTATION
+        ApiAnnotationProcessor.DEBUG_OPTION
 })
 public class ApiAnnotationProcessor extends AbstractProcessor {
 
     static final String DEBUG_OPTION = "debug";
-    static final String ADD_GENERATION_DATE = "addGenerationDate";
-    static final String ADD_GENERATED_ANNOTATION = "addGeneratedAnnotation";
-    static final String ADD_SUPPRESS_WARNINGS_ANNOTATION = "addSuppressWarningsAnnotation";
 
     static final String BUNDLE_CLASSNAME = "bundleClassname";
 
@@ -73,38 +67,34 @@ public class ApiAnnotationProcessor extends AbstractProcessor {
     public void init(ProcessingEnvironment env) {
         super.init(env);
         context = new Context(env);
-        context.logMessage(Diagnostic.Kind.NOTE, getClass().getSimpleName() + " init");
+        context.logMessage(Diagnostic.Kind.NOTE, getClass().getSimpleName() + " init \n");
     }
 
     @Override
     public SourceVersion getSupportedSourceVersion() {
-        context.logMessage(Diagnostic.Kind.NOTE, getClass().getSimpleName() + " getSupportedSourceVersion");
+        context.logMessage(Diagnostic.Kind.NOTE, getClass().getSimpleName() + " getSupportedSourceVersion \n");
         return SourceVersion.latestSupported();
     }
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        context.logMessage(Diagnostic.Kind.NOTE, getClass().getSimpleName() + " getSupportedAnnotationTypes");
+        context.logMessage(Diagnostic.Kind.NOTE, getClass().getSimpleName() + " getSupportedAnnotationTypes \n");
         Set<String> set = new HashSet<>();
         set.add(Impl.class.getCanonicalName());
-        for (String entity : set
-        ) {
-            context.logMessage(Diagnostic.Kind.NOTE, "  * SupportedAnnotationTypes -> "+entity);
-        }
         return Collections.unmodifiableSet(set);
     }
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        context.logMessage(Diagnostic.Kind.NOTE, getClass().getSimpleName() + " process [" +processSize.addAndGet(1)+']');
+        context.logMessage(Diagnostic.Kind.NOTE, getClass().getSimpleName() + " process [" +processSize.addAndGet(1)+']'+" \n");
         if (roundEnv.processingOver() || annotations.size() == 0) {
             return ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
         }
         final Set<MetaApi> apiImpls = new HashSet<>();
         for (Element element : roundEnv.getElementsAnnotatedWith(Impl.class)) {
             MetaApi metaApi = MetaApi.isValidApiAnnotatedClass(context, element);
-            context.logMessage(Diagnostic.Kind.NOTE, " process [" +processSize.addAndGet(1)+']');
             if (metaApi != null) {
+                context.logMessage(Diagnostic.Kind.NOTE, " process [" +processSize.addAndGet(1)+']'+" \n");
                 apiImpls.add(metaApi);
             }
         }

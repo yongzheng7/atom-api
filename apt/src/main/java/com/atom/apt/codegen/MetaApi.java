@@ -33,11 +33,11 @@ public class MetaApi {
     }
 
     private MetaApi(Context context, TypeElement classElement) {
-        Impl annotation = classElement.getAnnotation(Impl.class); // 获取类class 的注解
+        Impl annotation = classElement.getAnnotation(Impl.class);
         String apiClassQualifiedName;
         TypeElement apiClassTypeElement;
         try {
-            Class<?> clazz = annotation.api(); // 获取实现的接口 api
+            Class<?> clazz = annotation.api();
             apiClassQualifiedName = clazz.getCanonicalName();
             apiClassTypeElement = context.getElementUtils().getTypeElement(apiClassQualifiedName);
         } catch (MirroredTypeException mte) {
@@ -58,11 +58,8 @@ public class MetaApi {
     }
 
     public static MetaApi isValidApiAnnotatedClass(Context context, Element element) {
-        // 强转未 Type
         TypeElement classElement = (TypeElement) element;
-        // 获取修饰符
         Set<Modifier> modifierSet = classElement.getModifiers();
-        // 如果该类时 不未 Public的 则意味着访问权限可能有限
         if (!modifierSet.contains(Modifier.PUBLIC)) {
             context.logMessage(Diagnostic.Kind.ERROR,
                     "The class " + classElement.getQualifiedName().toString()
@@ -70,14 +67,12 @@ public class MetaApi {
                     classElement);
             return null;
         }
-        // 如果该类时 不未 是抽象类 则不可以进行注解
         if (modifierSet.contains(Modifier.ABSTRACT)) {
             context.logMessage(Diagnostic.Kind.ERROR, "The class " + classElement.getQualifiedName().toString()
                             + " is abstract. You can't annotate abstract classes with @" + Impl.class.getSimpleName(),
                     classElement);
             return null;
         }
-        // 判断是否有一个 public 修饰 空的构造函数
         if (!TypeUtils.hasPublicEmptyDefaultConstructor(classElement)) {
             context.logMessage(Diagnostic.Kind.ERROR, "The class " + classElement.getQualifiedName().toString()
                             + " must provide an public empty default constructor",
@@ -88,12 +83,11 @@ public class MetaApi {
         if (Object.class.getCanonicalName().equals(metaApi.getApiQualifiedName())) {
             return metaApi;
         }
-        TypeElement superClassElement = metaApi.apiTypeElement; // 获取到实现的api接口
+        TypeElement superClassElement = metaApi.apiTypeElement;
 
         if (!TypeUtils.isAssignable(context, classElement, superClassElement)) {
-            // 无实现关系
             String superClassName = superClassElement.getQualifiedName().toString();
-            if (ElementKind.INTERFACE.equals(superClassElement.getKind())) { // 如果是接口 必须要实现
+            if (ElementKind.INTERFACE.equals(superClassElement.getKind())) {
                 context.logMessage(Diagnostic.Kind.ERROR, "The class " + classElement.getQualifiedName().toString()
                                 + " annotated with @" + Impl.class.getSimpleName()
                                 + " must implement the interface " + superClassName,

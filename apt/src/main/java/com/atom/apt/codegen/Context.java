@@ -28,61 +28,21 @@ public final class Context {
     private final Map<String, String> options;
     // keep track of all classes for which model have been generated
     private final Collection<String> generatedModelClasses = new HashSet<>();
-    private boolean addGeneratedAnnotation = true;
-    private boolean addGenerationDate = true;
-    private boolean addSuppressWarningsAnnotation = true;
 
     public Context(ProcessingEnvironment env) {
         this.pe = env;
         this.options = env.getOptions();
         String tmp = options.get(ApiAnnotationProcessor.DEBUG_OPTION);
         logDebug = Boolean.parseBoolean(tmp);
-
-        tmp = options.get(ApiAnnotationProcessor.ADD_GENERATED_ANNOTATION);
-        if (tmp != null && !tmp.isEmpty()) {
-            setAddGeneratedAnnotation(Boolean.parseBoolean(tmp));
-        }
-        tmp = options.get(ApiAnnotationProcessor.ADD_GENERATION_DATE);
-        if (tmp != null && !tmp.isEmpty()) {
-            setAddGenerationDate(Boolean.parseBoolean(tmp));
-        }
-        tmp = options.get(ApiAnnotationProcessor.ADD_SUPPRESS_WARNINGS_ANNOTATION);
-        if (tmp != null && !tmp.isEmpty()) {
-            setAddSuppressWarningsAnnotation(Boolean.parseBoolean(tmp));
-        }
-        logMessage(Diagnostic.Kind.NOTE, "ApiAnnotation init Context start");
+        logMessage(Diagnostic.Kind.NOTE, "ApiAnnotation init Context start \n");
         for (Map.Entry<String, String> entry : options.entrySet()) {
-            logMessage(Diagnostic.Kind.NOTE, "ApiAnnotation init Context option: " + entry.getKey() + " -> " + entry.getValue());
+            logMessage(Diagnostic.Kind.NOTE, "\nApiAnnotation init Context option: " + entry.getKey() + " -> " + entry.getValue());
         }
-        logMessage(Diagnostic.Kind.NOTE, "ApiAnnotation init Context end");
+        logMessage(Diagnostic.Kind.NOTE, "\nApiAnnotation init Context end");
     }
 
     public ProcessingEnvironment getProcessingEnvironment() {
         return pe;
-    }
-
-    public boolean addGeneratedAnnotation() {
-        return addGeneratedAnnotation;
-    }
-
-    public void setAddGeneratedAnnotation(boolean addGeneratedAnnotation) {
-        this.addGeneratedAnnotation = addGeneratedAnnotation;
-    }
-
-    public boolean addGeneratedDate() {
-        return addGenerationDate;
-    }
-
-    public void setAddGenerationDate(boolean addGenerationDate) {
-        this.addGenerationDate = addGenerationDate;
-    }
-
-    public boolean isAddSuppressWarningsAnnotation() {
-        return addSuppressWarningsAnnotation;
-    }
-
-    public void setAddSuppressWarningsAnnotation(boolean addSuppressWarningsAnnotation) {
-        this.addSuppressWarningsAnnotation = addSuppressWarningsAnnotation;
     }
 
     public Elements getElementUtils() {
@@ -94,8 +54,7 @@ public final class Context {
     }
 
     public TypeElement getTypeElementForFullyQualifiedName(String fqcn) {
-        Elements elementUtils = pe.getElementUtils();
-        return elementUtils.getTypeElement(fqcn);
+        return getElementUtils().getTypeElement(fqcn);
     }
 
     void markGenerated(String name) {
@@ -105,6 +64,22 @@ public final class Context {
     boolean isAlreadyGenerated(String name) {
         return generatedModelClasses.contains(name);
     }
+
+
+    public String writeGeneratedAnnotation(ImportContext importContext) {
+        return "@" +
+                importContext.importType(Generated.class.getName()) +
+                "(value = \"" +
+                ApiAnnotationProcessor.class.getName() +
+                "\", date = \"" +
+                Context.SIMPLE_DATE_FORMAT.get().format(new Date()) +
+                "\")";
+    }
+
+    public String writeSuppressWarnings() {
+        return "@SuppressWarnings(\"all\")";
+    }
+
 
     public void logMessage(Diagnostic.Kind type, String message) {
         if (!logDebug ) {
@@ -118,26 +93,6 @@ public final class Context {
             return;
         }
         pe.getMessager().printMessage(type, message, element);
-    }
-
-    public String writeGeneratedAnnotation(ImportContext importContext) {
-        StringBuilder generatedAnnotation = new StringBuilder();
-        generatedAnnotation.append("@")
-                .append(importContext.importType(Generated.class.getName()))
-                .append("(value = \"")
-                .append(ApiAnnotationProcessor.class.getName());
-        if (addGeneratedDate()) {
-            generatedAnnotation.append("\", date = \"")
-                    .append(Context.SIMPLE_DATE_FORMAT.get().format(new Date()))
-                    .append("\")");
-        } else {
-            generatedAnnotation.append("\")");
-        }
-        return generatedAnnotation.toString();
-    }
-
-    public String writeSuppressWarnings() {
-        return "@SuppressWarnings(\"all\")";
     }
 
     @Override
