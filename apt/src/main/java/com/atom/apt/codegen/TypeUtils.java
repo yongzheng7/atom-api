@@ -152,7 +152,7 @@ public class TypeUtils {
         } else {
             List<? extends TypeMirror> typeArguments = t.getTypeArguments();
             if (typeArguments.size() == 0) {
-                throw new RuntimeException("Unable to determine collection type");
+                throw new RuntimeException("\n Unable to determine collection type");
             } else if (Map.class.getCanonicalName().equals(fqNameOfReturnedType)) {
                 collectionElementType = t.getTypeArguments().get(1);
             } else {
@@ -165,7 +165,7 @@ public class TypeUtils {
     public static String getKeyType(DeclaredType t, Context context) {
         List<? extends TypeMirror> typeArguments = t.getTypeArguments();
         if (typeArguments.size() == 0) {
-            context.logMessage(Diagnostic.Kind.ERROR, "Unable to determine type argument for " + t);
+            context.logger().error("\n Unable to determine type argument for " + t);
         }
         return extractClosestRealTypeAsString(typeArguments.get(0), context);
     }
@@ -190,7 +190,7 @@ public class TypeUtils {
         }
         while (true) {
             List<? extends TypeMirror> interfaces = classElement.getInterfaces();
-            context.logMessage(Diagnostic.Kind.NOTE, "\n The class " + classElement.getQualifiedName().toString());
+            context.logger().info("\n The class " + classElement.getQualifiedName().toString());
             if (interfaces.contains(superClassTypeMirror)) {
                 return true;
             }
@@ -210,7 +210,7 @@ public class TypeUtils {
     public static boolean isAssignable(Context context, TypeElement classElement, TypeElement superClassElement) {
         String currClassQualifiedName = classElement.getQualifiedName().toString();
         String superClassQualifiedName = superClassElement.getQualifiedName().toString();
-        context.logMessage(Diagnostic.Kind.NOTE, "isAssignable curr = " + currClassQualifiedName + "   super = "+superClassQualifiedName);
+        context.logger().info("\n isAssignable curr = " + currClassQualifiedName + "   super = " + superClassQualifiedName);
         if (currClassQualifiedName.equals(superClassQualifiedName)) {
             return true;
         }
@@ -220,10 +220,10 @@ public class TypeUtils {
             // check subclass
             TypeElement currentClass = classElement;
             String superClassName = superClassElement.getQualifiedName().toString();
-             context.logMessage(Diagnostic.Kind.NOTE, "The class " + classElement.getQualifiedName().toString());
+            context.logger().info("\n The class " + classElement.getQualifiedName().toString());
             while (true) {
                 TypeMirror superClassType = currentClass.getSuperclass();
-                 context.logMessage(Diagnostic.Kind.NOTE, "The class " + superClassType.toString());
+                context.logger().info("\n The class " + superClassType.toString());
                 if (superClassType.getKind() == TypeKind.NONE) {
                     return false;
                 }

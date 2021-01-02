@@ -67,18 +67,18 @@ public class ApiAnnotationProcessor extends AbstractProcessor {
     public void init(ProcessingEnvironment env) {
         super.init(env);
         context = new Context(env);
-        context.logMessage(Diagnostic.Kind.NOTE, getClass().getSimpleName() + " init \n");
+        context.logger().info(getClass().getSimpleName() + " init \n");
     }
 
     @Override
     public SourceVersion getSupportedSourceVersion() {
-        context.logMessage(Diagnostic.Kind.NOTE, getClass().getSimpleName() + " getSupportedSourceVersion \n");
+        context.logger().info(getClass().getSimpleName() + " getSupportedSourceVersion \n");
         return SourceVersion.latestSupported();
     }
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        context.logMessage(Diagnostic.Kind.NOTE, getClass().getSimpleName() + " getSupportedAnnotationTypes \n");
+        context.logger().info(getClass().getSimpleName() + " getSupportedAnnotationTypes \n");
         Set<String> set = new HashSet<>();
         set.add(Impl.class.getCanonicalName());
         return Collections.unmodifiableSet(set);
@@ -86,7 +86,7 @@ public class ApiAnnotationProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        context.logMessage(Diagnostic.Kind.NOTE, getClass().getSimpleName() + " process [" +processSize.addAndGet(1)+']'+" \n");
+        context.logger().info(getClass().getSimpleName() + " process [" + processSize.addAndGet(1) + ']' + " \n");
         if (roundEnv.processingOver() || annotations.size() == 0) {
             return ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
         }
@@ -94,7 +94,7 @@ public class ApiAnnotationProcessor extends AbstractProcessor {
         for (Element element : roundEnv.getElementsAnnotatedWith(Impl.class)) {
             MetaApi metaApi = MetaApi.isValidApiAnnotatedClass(context, element);
             if (metaApi != null) {
-                context.logMessage(Diagnostic.Kind.NOTE, " process [" +processSize.addAndGet(1)+']'+" \n");
+                context.logger().info(" process [" + processSize.addAndGet(1) + ']' + " \n");
                 apiImpls.add(metaApi);
             }
         }
@@ -103,7 +103,7 @@ public class ApiAnnotationProcessor extends AbstractProcessor {
     }
 
     private void processApis(RoundEnvironment roundEnv, Set<MetaApi> apies) {
-        context.logMessage(Diagnostic.Kind.NOTE, "processApis 1  ");
+        context.logger().info("processApis 1  ");
         String bundleClassname = context.getProcessingEnvironment().getOptions().get(ApiAnnotationProcessor.BUNDLE_CLASSNAME);
         if (bundleClassname == null || bundleClassname.isEmpty()) {
             return;
@@ -113,7 +113,7 @@ public class ApiAnnotationProcessor extends AbstractProcessor {
         }
         MetaApis metaApis = new MetaApis(context, bundleClassname);
         // auto generate java files
-        context.logMessage(Diagnostic.Kind.NOTE, "Writing bundle \"" + bundleClassname);
+        context.logger().info("Writing bundle \"" + bundleClassname);
         metaApis.writeFile(apies);
         context.markGenerated(bundleClassname);
     }

@@ -1,17 +1,29 @@
 package com.atom.apt.codegen;
 
 import com.atom.apt.annotation.ApiImpls;
+import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Generated;
 import javax.annotation.processing.FilerException;
+import javax.lang.model.element.Modifier;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 
@@ -33,116 +45,100 @@ public class MetaApis {
         this.mImportContext = new ImportContext(ImportContext.qualifier(bundleClassname));
     }
 
-    private String classSimpleName() {
-        return ImportContext.unqualify(mQualifiedName);
-    }
-
-    private String generateImports() {
-        return mImportContext.generateImports();
-    }
-
     private String importType(String fqcn) {
         return mImportContext.importType(fqcn);
     }
 
     public void writeFile(Set<MetaApi> apies) {
-        try {
-            String metaModelPackage = ImportContext.qualifier(mQualifiedName);
-            // need to generate the body first, since this will also update the required imports which need to
-            // be written out first
-            //ClassName pageConfigClassName = ClassName.get(mContext.getElementUtils().getTypeElement(mQualifiedName));
+        String metaModelPackage = ImportContext.qualifier(mQualifiedName);
+        String metaModelName = ImportContext.unqualify(mQualifiedName);
+        // need to generate the body first, since this will also update the required imports which need to
+        // be written out first
+        ClassName pageConfigClassName = ClassName.get(metaModelPackage, metaModelName);
+        mContext.logger().warning("warning >>> " + pageConfigClassName.canonicalName());
 
-            String body = generateBody(apies).toString();
-            String fullyQualifiedClassName = getFullyQualifiedClassName(metaModelPackage);
-            FileObject fo = mContext.getProcessingEnvironment().getFiler().createSourceFile(fullyQualifiedClassName);
-            OutputStream os = fo.openOutputStream();
-            PrintWriter pw = new PrintWriter(os);
+        TypeSpec.Builder pageConfigBuilder = TypeSpec.classBuilder(pageConfigClassName)
+                .superclass(ClassName.get(ApiImpls.class));
 
-            if (!metaModelPackage.isEmpty()) {
-                pw.println("package " + metaModelPackage + ";");
-                pw.println();
-            }
-            pw.println(generateImports());
-            pw.println(body);
-            pw.flush();
-            pw.close();
-            mContext.logMessage(Diagnostic.Kind.NOTE, fullyQualifiedClassName);
-        } catch (FilerException filerEx) {
-            mContext.logMessage(Diagnostic.Kind.ERROR, "Problem with Filer: " + filerEx.getMessage());
-        } catch (IOException ioEx) {
-            mContext.logMessage(Diagnostic.Kind.ERROR, "Problem opening file to write MetaModel for " + mQualifiedName + ioEx.getMessage());
-        }
-    }
+        String format = Context.SIMPLE_DATE_FORMAT.get().format(new Date());
+        // 代码创建 文档
+        CodeBlock javaDoc = CodeBlock.builder()
+                .add("<p>这是ApiAnnotationProcessor自动生成的类，用以自动进行页面的注册。</p>\n")
+                .add("\n")
+                .add("@date ").add(format)
+                .add("\n")
+                .build();
 
+        AnnotationSpec GeneratedAnnountation = AnnotationSpec.builder(Generated.class)
+                .addMember("value", "$S", ApiAnnotationProcessor.class.getName())
+                .addMember("date", "$S", format)
+                .build();
 
-    private StringBuffer generateBody(Set<MetaApi> apiImpls) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = null;
-        try {
-            pw = new PrintWriter(sw);
-            pw.println(mContext.writeGeneratedAnnotation(mImportContext));
-            pw.println(mContext.writeSuppressWarnings());
-            printClassDeclaration(pw);
-            pw.println();
-            pw.println("     @SuppressWarnings(\"unchecked\")");
-            pw.println("     public " + classSimpleName() + "() {");
-            pw.println();
+        AnnotationSpec suppressWarningsAnnountation = AnnotationSpec.builder(SuppressWarnings.class)
+                .addMember("value", "$S" , "all")
+                .build();
 
-            for (MetaApi metaApi : apiImpls) {
-                mApis.add(metaApi.getApiQualifiedName());
-            }
-            for (String api : mApis) {
+        MethodSpec.Builder constructorBuilder = MethodSpec.constructorBuilder()
+                .addModifiers(Modifier.PUBLIC);
+
+        Iterator<MetaApi> iterator = apies.iterator();
+        while (iterator.hasNext()) {
+            MetaApi next = iterator.next();
+            if (next.getApiQualifiedName() != null) {
                 // String classname = importType(api);
-                String implnames = getImplNames(api, apiImpls);
-                if ("".equals(implnames)) {
+                List<ClassName> implNames = getImplNames(next, apies);
+                if (implNames.isEmpty()) {
                     continue;
+                } else {
+                    int size = implNames.size();
+                    StringBuilder stringBuilder = new StringBuilder();
+                    //add(com.atom.api.ApiBundle.class , ApiBundleImpls.class)
+                    stringBuilder.append("add(") ;
+                    for (; size != 0; size--) {
+                        stringBuilder.append("$L.class") ;
+                        if(size!= 1){
+                            stringBuilder.append(",");
+                        }
+                    }
+                    stringBuilder.append(")") ;
+                    String s = stringBuilder.toString();
+                    mContext.logger().warning("warning >>> " +s);
+                    ClassName[] classNames = implNames.toArray(new ClassName[]{});
+                    constructorBuilder.addStatement(s ,classNames );
                 }
-                pw.println("        // Add " + api);
-                pw.println("        add(" + api + ".class, " + implnames + ");");
-            }
-            pw.println("    }");
-            pw.println();
 
-            pw.println("}");
-            return sw.getBuffer();
-        } finally {
-            if (pw != null) {
-                pw.close();
             }
+        }
+        MethodSpec constructor = constructorBuilder.build();
+
+        // 建造class者 组合完成
+        pageConfigBuilder
+                .addJavadoc(javaDoc)
+                .addAnnotation(GeneratedAnnountation)
+                .addAnnotation(suppressWarningsAnnountation)
+                .addModifiers(Modifier.PUBLIC)
+                .addMethod(constructor);
+        // 写入某个包中
+        JavaFile.Builder builder = JavaFile.builder(metaModelPackage, pageConfigBuilder.build());
+        JavaFile build = builder.build();
+        try {
+            build.writeTo(mContext.getFiler());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    private void printClassDeclaration(PrintWriter pw) {
-        pw.print("public class " + classSimpleName());
-        pw.print(" extends " + ApiImpls.class.getCanonicalName());
-        pw.println(" {");
-    }
-
-    private String getFullyQualifiedClassName(String metaModelPackage) {
-        String fullyQualifiedClassName = "";
-        if (!metaModelPackage.isEmpty()) {
-            fullyQualifiedClassName = fullyQualifiedClassName + metaModelPackage + ".";
-        }
-        fullyQualifiedClassName = fullyQualifiedClassName + classSimpleName();
-        return fullyQualifiedClassName;
-    }
-
-
-    private String getImplNames(String api, Collection<MetaApi> impls) {
-        StringBuilder sb = new StringBuilder();
-        boolean isFirst = true;
+    private List<ClassName> getImplNames(MetaApi api, Collection<MetaApi> impls) {
+        final List<ClassName> list = new ArrayList<>();
         for (MetaApi metaApi : impls) {
-            if (!metaApi.isApiImpl(api)) {
+            if (!metaApi.isApiImpl(api.getApiQualifiedName())) {
                 continue;
             }
-            if (!isFirst) {
-                sb.append(", ");
-            } else {
-                isFirst = false;
-            }
-            sb.append(importType(metaApi.getImplQualifiedName()));
-            sb.append(".class");
+            list.add(ClassName.get(metaApi.getImplTypeElement()));
         }
-        return sb.toString();
+        if (!list.isEmpty()) {
+            list.add(0, ClassName.get(api.getApiTypeElement()));
+        }
+        return list;
     }
 }

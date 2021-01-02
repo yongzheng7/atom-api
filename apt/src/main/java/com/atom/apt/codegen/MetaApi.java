@@ -18,19 +18,11 @@ import javax.tools.Diagnostic;
 @SuppressWarnings({"WeakerAccess"})
 public class MetaApi {
 
-    private final TypeElement implTypeElement;
     private final Context mContext;
+    private final TypeElement implTypeElement;
     private final String implQualifiedName;
     private final TypeElement apiTypeElement;
     private final String apiQualifiedName;
-
-    private MetaApi(Context context, String apiQualifiedName, String implQualifiedName) {
-        this.mContext = context;
-        this.apiTypeElement = null;
-        this.apiQualifiedName = apiQualifiedName;
-        this.implTypeElement = null;
-        this.implQualifiedName = implQualifiedName;
-    }
 
     private MetaApi(Context context, TypeElement classElement) {
         Impl annotation = classElement.getAnnotation(Impl.class);
@@ -49,32 +41,28 @@ public class MetaApi {
         this.mContext = context;
         this.implTypeElement = classElement;
         this.implQualifiedName = classElement.getQualifiedName().toString();
+        this.apiTypeElement = apiClassTypeElement; // 对应的接口的element对象
         this.apiQualifiedName = apiClassQualifiedName; // 实现的接口的名字
-        this.apiTypeElement = apiClassTypeElement; // 对应的element对象
-    }
-
-    public static MetaApi isValidApiAnnotatedClass(Context context, String apiQualifiedName, String implQualifiedName) {
-        return new MetaApi(context, apiQualifiedName, implQualifiedName);
     }
 
     public static MetaApi isValidApiAnnotatedClass(Context context, Element element) {
         TypeElement classElement = (TypeElement) element;
         Set<Modifier> modifierSet = classElement.getModifiers();
         if (!modifierSet.contains(Modifier.PUBLIC)) {
-            context.logMessage(Diagnostic.Kind.ERROR,
+            context.logger().error(
                     "The class " + classElement.getQualifiedName().toString()
-                            + " is not public.",
-                    classElement);
+                            + " is not public.", classElement
+            );
             return null;
         }
         if (modifierSet.contains(Modifier.ABSTRACT)) {
-            context.logMessage(Diagnostic.Kind.ERROR, "The class " + classElement.getQualifiedName().toString()
+            context.logger().error("The class " + classElement.getQualifiedName().toString()
                             + " is abstract. You can't annotate abstract classes with @" + Impl.class.getSimpleName(),
                     classElement);
             return null;
         }
         if (!TypeUtils.hasPublicEmptyDefaultConstructor(classElement)) {
-            context.logMessage(Diagnostic.Kind.ERROR, "The class " + classElement.getQualifiedName().toString()
+            context.logger().error("The class " + classElement.getQualifiedName().toString()
                             + " must provide an public empty default constructor",
                     classElement);
             return null;
@@ -88,12 +76,12 @@ public class MetaApi {
         if (!TypeUtils.isAssignable(context, classElement, superClassElement)) {
             String superClassName = superClassElement.getQualifiedName().toString();
             if (ElementKind.INTERFACE.equals(superClassElement.getKind())) {
-                context.logMessage(Diagnostic.Kind.ERROR, "The class " + classElement.getQualifiedName().toString()
+                context.logger().error("The class " + classElement.getQualifiedName().toString()
                                 + " annotated with @" + Impl.class.getSimpleName()
                                 + " must implement the interface " + superClassName,
                         classElement);
             } else {
-                context.logMessage(Diagnostic.Kind.ERROR, "The class " + classElement.getQualifiedName().toString()
+                context.logger().error("The class " + classElement.getQualifiedName().toString()
                                 + " annotated with @" + Impl.class.getSimpleName()
                                 + " must inherit from " + superClassName,
                         classElement);
@@ -103,11 +91,6 @@ public class MetaApi {
         return metaApi;
     }
 
-    /**
-     * Get at {@link Impl#api()} qualified name
-     *
-     * @return qualified name
-     */
     public String getApiQualifiedName() {
         return apiQualifiedName;
     }
@@ -116,21 +99,15 @@ public class MetaApi {
         return implQualifiedName;
     }
 
-    public boolean isApiImpl(String apiQualifiedName) {
-        return this.apiQualifiedName.equals(apiQualifiedName);
+    public TypeElement getApiTypeElement() {
+        return apiTypeElement;
     }
 
-    public boolean isApiImpl(TypeElement api) {
-        if (implTypeElement == null || apiTypeElement == null) {
-            return apiQualifiedName.equals(api.getQualifiedName().toString());
-        }
-        TypeElement classElement = implTypeElement;
-        if (!ElementKind.CLASS.equals(classElement.getKind())) {
-            return false;
-        }
-        if (!Object.class.getCanonicalName().equals(getApiQualifiedName())) {
-            classElement = apiTypeElement;
-        }
-        return TypeUtils.isAssignable(mContext, classElement, api);
+    public TypeElement getImplTypeElement() {
+        return implTypeElement;
+    }
+
+    public boolean isApiImpl(String apiQualifiedName) {
+        return this.apiQualifiedName.equals(apiQualifiedName);
     }
 }
