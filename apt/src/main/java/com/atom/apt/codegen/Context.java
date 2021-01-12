@@ -32,6 +32,7 @@ public final class Context {
     private final Map<String, String> options;
     // keep track of all classes for which model have been generated
     private final Collection<String> generatedModelClasses = new HashSet<>();
+    private final Collection<String> apiClass = new HashSet<>();
 
     public Context(ProcessingEnvironment env) {
         this.pe = env;
@@ -73,6 +74,14 @@ public final class Context {
 
     boolean isAlreadyGenerated(String name) {
         return generatedModelClasses.contains(name);
+    }
+
+    void putApi(String name) {
+        apiClass.add(name);
+    }
+
+    boolean isApi(String name) {
+        return apiClass.contains(name);
     }
 
 

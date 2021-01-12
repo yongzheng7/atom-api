@@ -24,31 +24,31 @@ public class Logger {
      * Print info log.
      */
     public void info(CharSequence info) {
-        if (StringUtils.isNotEmpty(info)) {
+        if (StringUtils.isNotEmpty(info)&&debug) {
             msg.printMessage(Diagnostic.Kind.NOTE, Consts.PREFIX_OF_LOGGER + info+"\n");
         }
     }
 
     public void error(CharSequence error) {
-        if (StringUtils.isNotEmpty(error)) {
+        if (StringUtils.isNotEmpty(error)&&debug) {
             msg.printMessage(Diagnostic.Kind.ERROR, Consts.PREFIX_OF_LOGGER + "An exception is encountered, [" + error + "]"+"\n");
         }
     }
 
     public void error(CharSequence error, Element var3) {
-        if (StringUtils.isNotEmpty(error) && var3 != null) {
+        if (StringUtils.isNotEmpty(error) && var3 != null&&debug) {
             msg.printMessage(Diagnostic.Kind.ERROR, Consts.PREFIX_OF_LOGGER + "An exception is encountered, [" + error + "]"+"\n", var3);
         }
     }
 
     public void error(Throwable error) {
-        if (null != error) {
+        if (null != error&&debug) {
             msg.printMessage(Diagnostic.Kind.ERROR, Consts.PREFIX_OF_LOGGER + "An exception is encountered, [" + error.getMessage() + "]" + "\n" + formatStackTrace(error.getStackTrace()));
         }
     }
 
     public void warning(CharSequence warning) {
-        if (StringUtils.isNotEmpty(warning)) {
+        if (StringUtils.isNotEmpty(warning)&&debug) {
             msg.printMessage(Diagnostic.Kind.WARNING, Consts.PREFIX_OF_LOGGER + warning);
         }
     }

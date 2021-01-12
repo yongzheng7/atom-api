@@ -50,7 +50,4 @@ dependencies {
 
     implementation project(':apt')
     annotationProcessor project(':apt')
-
-    implementation project(':aap')
-    annotationProcessor project(':aap')
 }

@@ -1,4 +1,3 @@
-include ':aap'
 include ':data'
 include ':api'
 include ':core'
