@@ -1,6 +1,8 @@
 package com.atom.apt.codegen;
 
-import com.atom.apt.annotation.Impl;
+import com.atom.annotation.Impl;
+
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -47,12 +49,12 @@ import javax.tools.Diagnostic;
  * </pre>
  */
 @SupportedOptions({
-        ApiAnnotationProcessor.DEBUG_OPTION
+        ApiAnnotationProcessor.DEBUG_OPTION,
+        ApiAnnotationProcessor.BUNDLE_CLASSNAME
 })
 public class ApiAnnotationProcessor extends AbstractProcessor {
 
     static final String DEBUG_OPTION = "debug";
-
     static final String BUNDLE_CLASSNAME = "bundleClassname";
 
     private static final Boolean ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS = Boolean.FALSE;
@@ -60,14 +62,13 @@ public class ApiAnnotationProcessor extends AbstractProcessor {
     private final AtomicLong processSize = new AtomicLong(0);
 
     public ApiAnnotationProcessor() {
-
     }
 
     @Override
     public void init(ProcessingEnvironment env) {
         super.init(env);
         context = new Context(env);
-        context.logger().info(getClass().getSimpleName() + " init \n");
+        context.logger().info(getClass().getSimpleName() + " init atom\n");
     }
 
     @Override
@@ -102,20 +103,28 @@ public class ApiAnnotationProcessor extends AbstractProcessor {
         return ALLOW_OTHER_PROCESSORS_TO_CLAIM_ANNOTATIONS;
     }
 
+    private static final String TAG = "Atom";
+
     private void processApis(RoundEnvironment roundEnv, Set<MetaApi> apies) {
-        context.logger().info("processApis 1  ");
+        context.logger().info("ApiAnnotationProcessor processApis\"");
         String bundleClassname = context.getProcessingEnvironment().getOptions().get(ApiAnnotationProcessor.BUNDLE_CLASSNAME);
-        if (bundleClassname == null || bundleClassname.isEmpty()) {
-            return;
-        }
-        if (context.isAlreadyGenerated(bundleClassname)) {
-            return;
+        if (StringUtils.isNotEmpty(bundleClassname)) {
+            bundleClassname = bundleClassname.replaceAll("[^0-9a-zA-Z_]+", "");
+            bundleClassname = TAG + upperFirstLetter(bundleClassname);
+            context.logger().info("The user has configuration the module name, it was [" + bundleClassname + "]");
+        } else {
+            throw new RuntimeException("ARouter::Compiler >>> No module name, for more information, look at gradle log.");
         }
         MetaApis metaApis = new MetaApis(context, bundleClassname);
-        // auto generate java files
-        context.logger().info("Writing bundle \"" + bundleClassname);
         metaApis.writeFile(apies);
-        context.markGenerated(bundleClassname);
+
     }
 
+
+    public static String upperFirstLetter(final String s) {
+        if (StringUtils.isEmpty(s) || !Character.isLowerCase(s.charAt(0))) {
+            return s;
+        }
+        return (char) (s.charAt(0) - 32) + s.substring(1);
+    }
 }

@@ -1,4 +1,4 @@
-package com.atom.apt.annotation;
+package com.atom.annotation;
 
 
 import java.lang.annotation.Documented;

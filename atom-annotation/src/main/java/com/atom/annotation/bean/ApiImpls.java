@@ -1,4 +1,4 @@
-package com.atom.apt.annotation;
+package com.atom.annotation.bean;
 
 import java.util.ArrayList;
 import java.util.Collection;

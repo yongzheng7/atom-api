@@ -1,3 +1,5 @@
+include ':atom-annotation'
+include ':atom-compiler'
 include ':data'
 include ':api'
 include ':core'

@@ -22,10 +22,9 @@ import javax.tools.Diagnostic;
  */
 @SuppressWarnings({"WeakerAccess"})
 public final class Context {
-    @SuppressWarnings("SimpleDateFormat")
-    public static final ThreadLocal<SimpleDateFormat> SIMPLE_DATE_FORMAT =
-            ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"));
 
+    private final static SimpleDateFormat DATEFORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    private final static  String aptPath = "com.atom.apt" ;
     private final ProcessingEnvironment pe;
     private final Logger logger;
     private final boolean logDebug;
@@ -39,13 +38,7 @@ public final class Context {
         this.options = env.getOptions();
         String tmp = options.get(ApiAnnotationProcessor.DEBUG_OPTION);
         logDebug = Boolean.parseBoolean(tmp);
-
-        logger = new Logger(env.getMessager() , !logDebug);
-        logger.info("ApiAnnotation init Context start \n");
-        for (Map.Entry<String, String> entry : options.entrySet()) {
-            logger.info("\nApiAnnotation init Context option: " + entry.getKey() + " -> " + entry.getValue());
-        }
-        logger.info( "\nApiAnnotation init Context end");
+        logger = new Logger(env.getMessager() , true);
     }
 
     public ProcessingEnvironment getProcessingEnvironment() {
@@ -68,14 +61,6 @@ public final class Context {
         return getElementUtils().getTypeElement(fqcn);
     }
 
-    void markGenerated(String name) {
-        generatedModelClasses.add(name);
-    }
-
-    boolean isAlreadyGenerated(String name) {
-        return generatedModelClasses.contains(name);
-    }
-
     void putApi(String name) {
         apiClass.add(name);
     }
@@ -84,10 +69,16 @@ public final class Context {
         return apiClass.contains(name);
     }
 
-
-
     public Logger logger() {
         return logger ;
+    }
+
+    public String packet(){
+        return aptPath ;
+    }
+
+    public SimpleDateFormat dateformat(){
+        return DATEFORMAT ;
     }
 
     @Override

@@ -1,7 +1,8 @@
-package com.atom.apt.codegen;
+package com.atom.compiler.codegen;
 
 import com.atom.annotation.AutoClass;
 import com.atom.annotation.bean.ApiImpls;
+import com.atom.compiler.processor.ApiImplsProcessor;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
@@ -52,7 +53,7 @@ public class MetaApis {
                 .build();
 
         AnnotationSpec GeneratedAnnountation = AnnotationSpec.builder(AutoClass.class)
-                .addMember("value", "$S", ApiAnnotationProcessor.class.getName())
+                .addMember("value", "$S", ApiImplsProcessor.class.getName())
                 .addMember("date", "$S", format)
                 .build();
 

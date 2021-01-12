@@ -16,9 +16,7 @@ android {
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = [
-                        bundleClassname: "com.atom.apt.app.ApiImplBundles",
-                        aapClassname: "com.atom.apt.aap.ApiImplBundles",
-                        debug:"false"
+                        bundleClassname: project.getName()
                 ]
             }
         }
@@ -48,6 +46,5 @@ dependencies {
     api project(':api')
     implementation project(':core')
 
-    implementation project(':apt')
     annotationProcessor project(':apt')
 }

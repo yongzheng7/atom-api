@@ -13,17 +13,23 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.atom.api.ApiBundle;
+import com.atom.annotation.Impl;
+import com.atom.annotation.bean.ApiImpls;
 import com.atom.api.ApiImplContext;
 import com.atom.api.ApiImplContextAware;
-import com.atom.apt.annotation.Impl;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Modifier;
+import java.net.JarURLConnection;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -33,6 +39,8 @@ import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 
 /**
@@ -43,7 +51,6 @@ import java.util.regex.Pattern;
 @SuppressWarnings("WeakerAccess")
 public abstract class AbstractApiImplContext implements ApiImplContext {
 
-    public static final String META_DATA_NAME_PREFIX = "com.atom.";
     private static final String TAG = "AbstractApiImplContext";
     /**
      * Map of cached data
@@ -56,7 +63,7 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
     private final Collection<String> mEnabledImpls = new Vector<>();
     private final Collection<String> mDisabledImpls = new Vector<>();
     private final Application mApplication;
-    private final List<ApiBundle> mApiImpls = new LinkedList<>();
+    private final List<ApiImpls> mApiImpls = new LinkedList<>();
     private final ExecutorService mExecutorService;
     private long mCachesLastCheckTime = System.currentTimeMillis();
     private boolean mIsDebug = false;
@@ -67,41 +74,127 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         loadPackages();
     }
 
+    public static List<Class<?>> getClasses(String packageName) {
+        // 第一个class类的集合
+        List<Class<?>> classes = new ArrayList<Class<?>>();
+        // 获取包的名字 并进行替换
+        String packageDirName = packageName.replace('.', '/');
+        // 定义一个枚举的集合 并进行循环来处理这个目录下的things
+        Enumeration<URL> dirs;
+        try {
+            dirs = Thread.currentThread().getContextClassLoader().getResources(packageDirName);
+            // 循环迭代下去
+            while (dirs.hasMoreElements()) {
+                URL url = dirs.nextElement();
+                // 得到协议的名称
+                String protocol = url.getProtocol();
+                if ("file".equals(protocol)) {
+                    // 获取包的物理路径
+                    String filePath = URLDecoder.decode(url.getFile(), "UTF-8");
+                    // 以文件的方式扫描整个包下的文件 并添加到集合中
+                    classes.addAll(findClassByDirectory(packageName, filePath));
+                } else if ("jar".equals(protocol)) {
+                    classes.addAll(findClassInJar(packageName, url));
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return classes;
+    }
+
+    public static List<Class<?>> findClassByDirectory(String packageName, String packagePath) {
+        // 获取此包的目录 建立一个File
+        File dir = new File(packagePath);
+        if (!dir.exists() || !dir.isDirectory()) {
+            return new ArrayList<>(0);
+        }
+        File[] dirs = dir.listFiles();
+        List<Class<?>> classes = new ArrayList<>();
+        if (dirs == null) return classes;
+        // 循环所有文件
+        for (File file : dirs) {
+            // 如果是目录 则继续扫描
+            if (file.isDirectory()) {
+                classes.addAll(findClassByDirectory(packageName + "." + file.getName(),
+                        file.getAbsolutePath()));
+            } else if (file.getName().endsWith(".class")) {
+                // 如果是java类文件，去掉后面的.class 只留下类名
+                String className = file.getName().substring(0, file.getName().length() - 6);
+                try {
+                    Class<?> aClass = Class.forName(packageName + '.' + className);
+                    if (ApiImpls.class.isAssignableFrom(aClass)) {
+                        classes.add(aClass);
+                    }
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return classes;
+    }
+
+    public static List<Class<?>> findClassInJar(String packageName, URL url) {
+
+        List<Class<?>> classes = new ArrayList<Class<?>>();
+        String packageDirName = packageName.replace('.', '/');
+        // 定义一个JarFile
+        JarFile jar;
+        try {
+            // 获取jar
+            jar = ((JarURLConnection) url.openConnection()).getJarFile();
+            Enumeration<JarEntry> entries = jar.entries();
+            while (entries.hasMoreElements()) {
+                // 获取jar里的一个实体 可以是目录 和一些jar包里的其他文件 如META-INF等文件
+                JarEntry entry = entries.nextElement();
+                if (entry.isDirectory()) {
+                    continue;
+                }
+                String name = entry.getName();
+                if (name.charAt(0) == '/') {
+                    // 获取后面的字符串
+                    name = name.substring(1);
+                }
+
+                // 如果前半部分和定义的包名相同
+                if (name.startsWith(packageDirName) && name.endsWith(".class")) {
+                    // 去掉后面的".class"
+                    String className = name.substring(0, name.length() - 6).replace('/', '.');
+                    try {
+                        // 添加到classes
+                        Class<?> aClass = Class.forName(className);
+                        if (ApiImpls.class.isAssignableFrom(aClass)) {
+                            classes.add(aClass);
+                        }
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return classes;
+    }
+
     @SuppressWarnings("WeakerAccess")
     protected void loadPackages() {
-        Context context = mApplication;
-        ApplicationInfo appInfo;
-        try {
-            appInfo = context.getPackageManager().getApplicationInfo(context.getPackageName(), PackageManager.GET_META_DATA);
-            mIsDebug = (appInfo.flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
-        } catch (PackageManager.NameNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-        for (String key : appInfo.metaData.keySet()) {
-            Log.e("loadPackages"  ,"key > "+key) ;
-            if (!key.startsWith(META_DATA_NAME_PREFIX)) {
-                continue;
-            }
-            String classname = appInfo.metaData.getString(key, null);
-            if (classname == null || classname.isEmpty()) {
-                continue;
-            }
-            Log.e("loadPackages"  ,"classname > "+classname) ;
+        List<Class<?>> classes = getClasses("com.atom.apt");
+        for (Class<?> clazz: classes
+             ) {
+            ApiImpls apiImpls = null;
             try {
-                Class<?> cls = context.getClassLoader().loadClass(classname);
-                if (ApiBundle.class.isAssignableFrom(cls)) {
-                    ApiBundle apiImpls = (ApiBundle) cls.newInstance();
-                    if (apiImpls instanceof ApiImplContextAware) {
-                        ((ApiImplContextAware) apiImpls).setApiImplContext(this);
-                    }
-                    mApiImpls.add(apiImpls);
-                    Log.d("loadPackages", classname + " succeed");
-                } else {
-                    throw new RuntimeException(classname + " not implements from ApiImpls");
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+                apiImpls = (ApiImpls) clazz.newInstance();
+            } catch (IllegalAccessException | InstantiationException e) {
+                e.printStackTrace();
             }
+            if (apiImpls instanceof ApiImplContextAware) {
+                ((ApiImplContextAware) apiImpls).setApiImplContext(this);
+            }
+            mApiImpls.add(apiImpls);
         }
     }
 
@@ -144,11 +237,9 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         Impl impl;
         String name;
         Boolean enabled;
-        for (ApiBundle imp : mApiImpls) {
+        for (ApiImpls imp : mApiImpls) {
             impls = imp.getApiImpls(requiredType);
-            Log.e("loadPackages" ,"imp >"+ imp.getClass().getName()) ;
             if (impls != null) {
-                Log.e("loadPackages" ,"imp > impls"+ impls.size()) ;
                 for (Class<? extends T> cls : impls) {
                     impl = cls.getAnnotation(Impl.class);
                     if (impl != null) {
@@ -349,6 +440,7 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
 
     /**
      * Enable or disable implements by name
+     *
      * @param name   name  of implements
      * @param enable true enable, false disable
      */
@@ -375,6 +467,7 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
 
     /**
      * Return the implements is enabled or not
+     *
      * @param name name of implements
      * @return true or false
      */
