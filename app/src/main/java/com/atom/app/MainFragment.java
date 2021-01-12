@@ -10,10 +10,11 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.atom.annotation.Impl;
 import com.atom.api.ApiImplContext;
 import com.atom.api.app.Hello;
 import com.atom.core.ui.AbstractFragment;
-
+@Impl(api = AbstractFragment.class)
 public class MainFragment extends AbstractFragment {
 
     public MainFragment() {

@@ -6,7 +6,7 @@ import com.atom.annotation.Impl;
 import com.atom.api.app.Hello;
 
 
-@Impl(api = Hello.class)
+@Impl(api = Hello.class, name = "waswaswas" , version = 2)
 public class HelloWorld2 implements Hello{
     String filed = "asdasd";
     String name = "asdasd";

@@ -14,8 +14,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.lang.model.element.Modifier;
@@ -69,19 +71,17 @@ public class MetaApis {
             MetaApi next = iterator.next();
             String apiQualifiedName = next.getApiQualifiedName();
             if (apiQualifiedName != null) {
-                boolean isHasApi = mContext.isApi(apiQualifiedName);
+                boolean isHasApi = mContext.hasApi(apiQualifiedName);
                 if (isHasApi) {
                     continue;
                 } else {
                     mContext.putApi(apiQualifiedName);
                 }
-                List<ClassName> implNames = getImplNames(next, apies);
-                if (implNames.isEmpty()) {
-                    continue;
-                } else {
+                List<SingleImpl> singleList = new ArrayList<>();
+                List<ClassName> implNames = getImplNames(next, apies, singleList);
+                if (!implNames.isEmpty()) {
                     int size = implNames.size();
                     StringBuilder stringBuilder = new StringBuilder();
-                    mContext.logger().warning("warning >>> size >>>" + size);
                     stringBuilder.append("add(");
                     for (; size != 0; size--) {
                         stringBuilder.append("$L.class");
@@ -94,8 +94,12 @@ public class MetaApis {
                     mContext.logger().warning("warning >>> " + s);
                     ClassName[] classNames = implNames.toArray(new ClassName[]{});
                     constructorBuilder.addStatement(s, (Object[]) classNames);
+                    for (SingleImpl impl : singleList
+                    ) {
+                        if(impl.name.isEmpty()) continue;
+                        constructorBuilder.addStatement("add($S , $L.class , $L.class , "+impl.version+")" , impl.name , impl.apiClass , impl.implClass);
+                    }
                 }
-
             }
         }
         MethodSpec constructor = constructorBuilder.build();
@@ -115,29 +119,34 @@ public class MetaApis {
         }
     }
 
-    private List<ClassName> getImplNames(MetaApi api, Collection<MetaApi> impls) {
+    private List<ClassName> getImplNames(MetaApi api, Collection<MetaApi> impls, List<SingleImpl> result) {
         final List<ClassName> list = new ArrayList<>();
+        ClassName apiClassName = ClassName.get(api.getApiTypeElement());
         for (MetaApi metaApi : impls) {
             if (!metaApi.isApiImpl(api.getApiQualifiedName())) {
                 continue;
             }
-            list.add(ClassName.get(metaApi.getImplTypeElement()));
+            ClassName implClassName = ClassName.get(metaApi.getImplTypeElement());
+            list.add(implClassName);
+            result.add(new SingleImpl(apiClassName, implClassName, metaApi.getImplAnnotationName(), metaApi.getImplAnnotationVersion()));
         }
         if (!list.isEmpty()) {
-            list.add(0, ClassName.get(api.getApiTypeElement()));
+            list.add(0, apiClassName);
         }
         return list;
     }
 
+    static class SingleImpl {
+        ClassName apiClass;
+        ClassName implClass;
+        String name;
+        long version;
 
-    public static String unqualify(String qualifiedName) {
-        int loc = qualifiedName.lastIndexOf('.');
-        return (loc < 0) ? qualifiedName : qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
-    }
-
-
-    public static String qualifier(String qualifiedName) {
-        int loc = qualifiedName.lastIndexOf(".");
-        return (loc < 0) ? "" : qualifiedName.substring(0, loc);
+        public SingleImpl(ClassName apiClass, ClassName implClass, String name, long version) {
+            this.apiClass = apiClass;
+            this.implClass = implClass;
+            this.name = name;
+            this.version = version;
+        }
     }
 }

@@ -23,6 +23,8 @@ public class MetaApi {
     private final String implQualifiedName;
     private final TypeElement apiTypeElement;
     private final String apiQualifiedName;
+    private final String implAnnotationName ;
+    private final long implAnnotationVersion ;
 
     private MetaApi(Context context, TypeElement classElement) {
         Impl annotation = classElement.getAnnotation(Impl.class);
@@ -43,6 +45,10 @@ public class MetaApi {
         this.implQualifiedName = classElement.getQualifiedName().toString();
         this.apiTypeElement = apiClassTypeElement; // 对应的接口的element对象
         this.apiQualifiedName = apiClassQualifiedName; // 实现的接口的名字
+
+        this.implAnnotationName = annotation.name();
+        this.implAnnotationVersion = annotation.version();
+
     }
 
     public static MetaApi isValidApiAnnotatedClass(Context context, Element element) {
@@ -113,5 +119,13 @@ public class MetaApi {
 
     public boolean isApiImpl(String apiQualifiedName) {
         return this.apiQualifiedName.equals(apiQualifiedName);
+    }
+
+    public String getImplAnnotationName() {
+        return implAnnotationName;
+    }
+
+    public long getImplAnnotationVersion() {
+        return implAnnotationVersion;
     }
 }

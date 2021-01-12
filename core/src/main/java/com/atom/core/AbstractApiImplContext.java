@@ -29,6 +29,7 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -183,8 +184,8 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
     @SuppressWarnings("WeakerAccess")
     protected void loadPackages() {
         List<Class<?>> classes = getClasses("com.atom.apt");
-        for (Class<?> clazz: classes
-             ) {
+        for (Class<?> clazz : classes
+        ) {
             ApiImpls apiImpls = null;
             try {
                 apiImpls = (ApiImpls) clazz.newInstance();
@@ -275,6 +276,11 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
     @Override
     public <T> T getApi(String name, Class<T> requiredType) {
         return getApi(name, requiredType, true);
+    }
+
+    @Override
+    public <T> T getApi(String name, Class<T> requiredType, long version) {
+        return null;
     }
 
     @SuppressWarnings("unchecked")
@@ -514,39 +520,11 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
     @Override
     public void execute(Runnable command) {
         mExecutorService.execute(command);
-        if (isDebugEnabled()) {
-            if (mExecutorService instanceof ThreadPoolExecutor) {
-                ThreadPoolExecutor executor = (ThreadPoolExecutor) mExecutorService;
-                long active = executor.getActiveCount();
-                long completed = executor.getCompletedTaskCount();
-                long total = executor.getTaskCount();
-                long largestPoolSize = executor.getLargestPoolSize();
-                long queued = total - active - completed;
-                debug(Thread.currentThread().getStackTrace()[3], "ExecutorService " + "TaskCount: " + total + " ActiveCount: " + active
-                        + ", CompletedTaskCount: " + completed + ", QueuedCount: " + queued + ", LargestPoolSize: " + largestPoolSize
-                );
-            }
-        }
     }
-
     @Override
     public void execute(Runnable command, long priority) {
-        execute(command);
+        mExecutorService.execute(new PrioritizedRunnable(command , priority));
     }
-
-    @Override
-    public void requestPermissions(String... permissions) {
-        // TODO 请求权限操作
-    }
-
-
-    /**
-     * Start Service for background work.
-     */
-    public void startWorkService() {
-        //TODO 启动一个工作server 可以启动一个保活守护server
-    }
-
     @SuppressWarnings("WeakerAccess")
     protected <T> Class<? extends T> findApiImpl(String name, Class<T> requiredType, boolean useRegex) {
         Collection<Class<? extends T>> imps = getApiImpls(requiredType);

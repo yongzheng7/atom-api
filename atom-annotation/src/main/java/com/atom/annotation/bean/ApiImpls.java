@@ -10,6 +10,8 @@ public abstract class ApiImpls {
 
     private final Map<Class<?>, ApiImps<?>> mApiImps = new HashMap<>();
 
+    private final Map<String, Class<?>> mImplsMap = new HashMap<>();
+
     public ApiImpls() {
     }
 
@@ -26,10 +28,26 @@ public abstract class ApiImpls {
         Collections.addAll(imps, apiImpls);
     }
 
+    protected <T> void add(String name, Class<T> apiClass, Class<? extends T> implClass, long version) {
+        if (name == null || name.isEmpty()) return;
+        final String finalKey = apiClass.getCanonicalName() + "$" + name + "$" + version;
+        synchronized (mImplsMap) {
+            mImplsMap.put(finalKey, implClass);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public <T> Collection<Class<? extends T>> getApiImpls(Class<T> apiClass) {
         synchronized (mApiImps) {
             return (ApiImps<T>) mApiImps.get(apiClass);
+        }
+    }
+
+    public <T> Class<? extends T> getApiImpls(Class<T> apiClass, String name, long version) {
+        if (name == null || name.isEmpty()) return null;
+        final String finalKey = apiClass.getCanonicalName() + "$" + name + "$" + version;
+        synchronized (mImplsMap) {
+            return (Class<? extends T>) mImplsMap.get(finalKey);
         }
     }
 

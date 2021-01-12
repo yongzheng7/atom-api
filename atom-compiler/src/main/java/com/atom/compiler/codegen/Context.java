@@ -45,7 +45,7 @@ public final class Context {
         Map<String, String> options = processingEnv.getOptions();
         if (MapUtils.isNotEmpty(options)) {
             moduleName = options.get(Consts.BUNDLE_CLASSNAME);
-            debug = options.get(Consts.DEBUG_OPTION).equalsIgnoreCase("true");
+            debug = "true".equalsIgnoreCase(options.get(Consts.DEBUG_OPTION));
         }
         logger = new Logger(processingEnv.getMessager(), debug);
         if (StringUtils.isNotEmpty(moduleName)) {
@@ -74,19 +74,11 @@ public final class Context {
         return typeUtils;
     }
 
-    public TypeElement getTypeElementForFullyQualifiedName(String fqcn) {
-        return getElementUtils().getTypeElement(fqcn);
-    }
-
-    public void markGenerated(String name) {
-        generatedModelClasses.add(name);
-    }
-
     public void putApi(String name) {
         apiClass.add(name);
     }
 
-    public boolean isApi(String name) {
+    public boolean hasApi(String name) {
         return apiClass.contains(name);
     }
 

@@ -44,5 +44,5 @@ dependencies {
 
     api project(':api')
 
-    annotationProcessor project(':apt')
+    annotationProcessor project(':atom-compiler')
 }

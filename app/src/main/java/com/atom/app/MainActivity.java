@@ -1,17 +1,19 @@
 package com.atom.app;
 
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
+import com.atom.annotation.Impl;
 import com.atom.api.ApiImplContext;
 import com.atom.api.app.Hello;
 import com.atom.core.base.ObservableManager;
 import com.atom.core.ui.AbstractActivity;
 
+@Impl(api = Activity.class)
 public class MainActivity extends AbstractActivity {
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
