@@ -5,6 +5,8 @@ import android.content.Context;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.atom.api.ApiImplContext;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -21,6 +23,12 @@ public class ExampleInstrumentedTest {
     public void useAppContext() {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("com.atom.core.test", appContext.getPackageName());
+        System.out.println( appContext.getPackageName());
+        Context applicationContext = appContext.getApplicationContext();
+        if(applicationContext instanceof ApiImplContext){
+            assertEquals("com.atom.core.test2", appContext.getPackageName());
+        }else {
+            assertEquals("com.atom.core.test", appContext.getPackageName());
+        }
     }
 }

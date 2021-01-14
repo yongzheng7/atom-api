@@ -26,16 +26,14 @@ public class MainFragment extends AbstractFragment {
         View inflate = inflater.inflate(R.layout.activity_fragment, container, false);
         TextView viewById = inflate.findViewById(R.id.testText2);
         if(viewById != null){
-            viewById.setOnClickListener(view -> apiImplContext().post(() -> {
+            viewById.setOnClickListener(view -> {
                 ApiImplContext apiImplContext = apiImplContext();
                 Hello api = apiImplContext.getApi(Hello.class);
                 if (api != null) {
                     api.hello();
                 }
                 Toast.makeText(getContext(), "mainFragment", Toast.LENGTH_SHORT).show();
-            }));
-
-
+            });
         }
         return inflate;
     }

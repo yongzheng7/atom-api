@@ -1,57 +1,56 @@
 package com.atom.annotation.bean;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+
 public abstract class ApiImpls {
 
-    private final Map<Class<?>, ApiImps<?>> mApiImps = new HashMap<>();
-
-    private final Map<String, Class<?>> mImplsMap = new HashMap<>();
+    private final Map<Class<?>, ApiImplsMap<?>> mApiImpsMap = new HashMap<>();
 
     public ApiImpls() {
     }
 
-    @SuppressWarnings("unchecked")
-    protected <T> void add(Class<T> apiClass, Class<? extends T>... apiImpls) {
-        ApiImps<T> imps;
-        synchronized (mApiImps) {
-            imps = (ApiImps<T>) mApiImps.get(apiClass);
-            if (imps == null) {
-                imps = new ApiImps<>();
-                mApiImps.put(apiClass, imps);
+    protected <T> void add(String name, Class<T> apiClass, Class<? extends T> implClass, long version) {
+        ApiImplsMap<T> implsMap;
+        synchronized (mApiImpsMap) {
+            ApiImplsMap<?> apiImplsMap = mApiImpsMap.get(apiClass);
+            if (apiImplsMap == null) {
+                implsMap = new ApiImplsMap<>();
+                mApiImpsMap.put(apiClass, implsMap);
+            } else {
+                implsMap = (ApiImplsMap<T>) apiImplsMap;
             }
         }
-        Collections.addAll(imps, apiImpls);
-    }
-
-    protected <T> void add(String name, Class<T> apiClass, Class<? extends T> implClass, long version) {
-        if (name == null || name.isEmpty()) return;
-        final String finalKey = apiClass.getCanonicalName() + "$" + name + "$" + version;
-        synchronized (mImplsMap) {
-            mImplsMap.put(finalKey, implClass);
-        }
+        implsMap.put(implClass, new NameVersion(name, version));
     }
 
     @SuppressWarnings("unchecked")
-    public <T> Collection<Class<? extends T>> getApiImpls(Class<T> apiClass) {
-        synchronized (mApiImps) {
-            return (ApiImps<T>) mApiImps.get(apiClass);
+    public <T> Map<Class<? extends T>, NameVersion> getApiImpls(Class<T> apiClass) {
+        synchronized (mApiImpsMap) {
+            return (ApiImplsMap<T>) mApiImpsMap.get(apiClass);
         }
     }
 
-    public <T> Class<? extends T> getApiImpls(Class<T> apiClass, String name, long version) {
-        if (name == null || name.isEmpty()) return null;
-        final String finalKey = apiClass.getCanonicalName() + "$" + name + "$" + version;
-        synchronized (mImplsMap) {
-            return (Class<? extends T>) mImplsMap.get(finalKey);
-        }
+    private static class ApiImplsMap<T> extends HashMap<Class<? extends T>, NameVersion> {
+
     }
 
-    private static class ApiImps<T> extends ArrayList<Class<? extends T>> {
+    public static class NameVersion {
+        final String name;
+        final long version;
 
+        public NameVersion(String name, long value) {
+            this.name = name;
+            this.version = value;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public long getVersion() {
+            return version;
+        }
     }
 }

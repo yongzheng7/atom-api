@@ -20,6 +20,7 @@ import com.atom.api.core.ui.ActivityApi;
 
 @SuppressWarnings("unused")
 public abstract class AbstractActivity extends FragmentActivity implements ActivityApi {
+
     public static final String EXTRA_FRAGMENT_CLASS_NAME = "activity.fragment.classname";
     public static final String EXTRA_REQUEST_PERMISSIONS = "activity.request.permissions";
 
@@ -40,12 +41,6 @@ public abstract class AbstractActivity extends FragmentActivity implements Activ
     @Override
     public Activity getActivity() {
         return this;
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-        super.onCreate(savedInstanceState);
     }
 
     protected void reportException(Exception ex) {

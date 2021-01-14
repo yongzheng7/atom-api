@@ -17,6 +17,9 @@ import com.atom.annotation.Impl;
 import com.atom.annotation.bean.ApiImpls;
 import com.atom.api.ApiImplContext;
 import com.atom.api.ApiImplContextAware;
+import com.atom.core.utils.ClassUtils;
+
+import android.text.TextUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,27 +42,11 @@ import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 
-/**
- * Load All ApiImpls implements from META DATA it's name start with "com.atom."
- * <p>
- * Created by HYW on 2017/11/10.
- */
-@SuppressWarnings("WeakerAccess")
 public abstract class AbstractApiImplContext implements ApiImplContext {
 
-    private static final String TAG = "AbstractApiImplContext";
-    /**
-     * Map of cached data
-     */
     private final Map<String, WeakReference<Object>> mCaches = new HashMap<>();
-    /**
-     * Map of singleton beans, keyed by name
-     */
     private final Map<String, Object> mSingletonBeans = new HashMap<>();
     private final Collection<String> mEnabledImpls = new Vector<>();
     private final Collection<String> mDisabledImpls = new Vector<>();
@@ -75,115 +62,8 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         loadPackages();
     }
 
-    public static List<Class<?>> getClasses(String packageName) {
-        // 第一个class类的集合
-        List<Class<?>> classes = new ArrayList<Class<?>>();
-        // 获取包的名字 并进行替换
-        String packageDirName = packageName.replace('.', '/');
-        // 定义一个枚举的集合 并进行循环来处理这个目录下的things
-        Enumeration<URL> dirs;
-        try {
-            dirs = Thread.currentThread().getContextClassLoader().getResources(packageDirName);
-            // 循环迭代下去
-            while (dirs.hasMoreElements()) {
-                URL url = dirs.nextElement();
-                // 得到协议的名称
-                String protocol = url.getProtocol();
-                if ("file".equals(protocol)) {
-                    // 获取包的物理路径
-                    String filePath = URLDecoder.decode(url.getFile(), "UTF-8");
-                    // 以文件的方式扫描整个包下的文件 并添加到集合中
-                    classes.addAll(findClassByDirectory(packageName, filePath));
-                } else if ("jar".equals(protocol)) {
-                    classes.addAll(findClassInJar(packageName, url));
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return classes;
-    }
-
-    public static List<Class<?>> findClassByDirectory(String packageName, String packagePath) {
-        // 获取此包的目录 建立一个File
-        File dir = new File(packagePath);
-        if (!dir.exists() || !dir.isDirectory()) {
-            return new ArrayList<>(0);
-        }
-        File[] dirs = dir.listFiles();
-        List<Class<?>> classes = new ArrayList<>();
-        if (dirs == null) return classes;
-        // 循环所有文件
-        for (File file : dirs) {
-            // 如果是目录 则继续扫描
-            if (file.isDirectory()) {
-                classes.addAll(findClassByDirectory(packageName + "." + file.getName(),
-                        file.getAbsolutePath()));
-            } else if (file.getName().endsWith(".class")) {
-                // 如果是java类文件，去掉后面的.class 只留下类名
-                String className = file.getName().substring(0, file.getName().length() - 6);
-                try {
-                    Class<?> aClass = Class.forName(packageName + '.' + className);
-                    if (ApiImpls.class.isAssignableFrom(aClass)) {
-                        classes.add(aClass);
-                    }
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        return classes;
-    }
-
-    public static List<Class<?>> findClassInJar(String packageName, URL url) {
-
-        List<Class<?>> classes = new ArrayList<Class<?>>();
-        String packageDirName = packageName.replace('.', '/');
-        // 定义一个JarFile
-        JarFile jar;
-        try {
-            // 获取jar
-            jar = ((JarURLConnection) url.openConnection()).getJarFile();
-            Enumeration<JarEntry> entries = jar.entries();
-            while (entries.hasMoreElements()) {
-                // 获取jar里的一个实体 可以是目录 和一些jar包里的其他文件 如META-INF等文件
-                JarEntry entry = entries.nextElement();
-                if (entry.isDirectory()) {
-                    continue;
-                }
-                String name = entry.getName();
-                if (name.charAt(0) == '/') {
-                    // 获取后面的字符串
-                    name = name.substring(1);
-                }
-
-                // 如果前半部分和定义的包名相同
-                if (name.startsWith(packageDirName) && name.endsWith(".class")) {
-                    // 去掉后面的".class"
-                    String className = name.substring(0, name.length() - 6).replace('/', '.');
-                    try {
-                        // 添加到classes
-                        Class<?> aClass = Class.forName(className);
-                        if (ApiImpls.class.isAssignableFrom(aClass)) {
-                            classes.add(aClass);
-                        }
-                    } catch (ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return classes;
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    protected void loadPackages() {
-        List<Class<?>> classes = getClasses("com.atom.apt");
+    private void loadPackages() {
+        List<Class<?>> classes = ClassUtils.getClasses("com.atom.apt");
         for (Class<?> clazz : classes
         ) {
             ApiImpls apiImpls = null;
@@ -199,52 +79,134 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @Override
+    public <T> Collection<Class<? extends T>> getApiImpls(Class<T> requiredType) {
+        List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> entryList = filterApiImpls(requiredType);
+        List<Class<? extends T>> classes = new ArrayList<>();
+        for (Map.Entry<Class<? extends T>, ApiImpls.NameVersion> entry : entryList
+        ) {
+            classes.add(entry.getKey());
+        }
+        return Collections.unmodifiableCollection(classes);
+    }
+
+    @Override
+    public <T> Class<? extends T> getApiImplByVersion(Class<T> requiredType, long version) {
+        return getApiImpl(requiredType, null, version, false);
+    }
+
+    @Override
+    public <T> Class<? extends T> getApiImplByName(Class<T> requiredType, String name) {
+        return getApiImplByName(requiredType, name, 0);
+    }
+
+    @Override
+    public <T> Class<? extends T> getApiImplByName(Class<T> requiredType, String name, long version) {
+        return getApiImpl(requiredType, name, version, false);
+    }
+
+    @Override
+    public <T> Class<? extends T> getApiImplByRegex(Class<T> requiredType, String regex) {
+        return getApiImplByRegex(requiredType, regex, 0);
+    }
+
+    @Override
+    public <T> Class<? extends T> getApiImplByRegex(Class<T> requiredType, String regex, long version) {
+        return getApiImpl(requiredType, regex, version, true);
+    }
+
+    @Override
+    public <T> Class<? extends T> getApiImpl(Class<T> requiredType, String name, long version, boolean useRegex) {
+        return findApiImpl(name, version, requiredType, useRegex);
+    }
+
+    @Override
     public <T> T getApi(Class<T> requiredType) {
-        T api = getApi("", requiredType, false);
-        if (api != null) {
-            return api;
-        }
-        api = getApi(requiredType.getSimpleName(), requiredType, false);
-        if (api != null) {
-            return api;
-        }
-        String key = convertKey("", requiredType);
+        return getApi(requiredType, null, 0, false);
+    }
+
+    @Override
+    public <T> T getApiByName(Class<T> requiredType, String name) {
+        return getApiByName(requiredType, name, 0);
+    }
+
+    @Override
+    public <T> T getApiByName(Class<T> requiredType, String name, long version) {
+        return getApi(requiredType, name, version, false);
+    }
+
+    @Override
+    public <T> T getApiByRegex(Class<T> requiredType, String regex) {
+        return getApiByRegex(requiredType, regex, 0);
+    }
+
+    @Override
+    public <T> T getApiByRegex(Class<T> requiredType, String regex, long version) {
+        return getApi(requiredType, regex, version, true);
+    }
+
+    @Override
+    public <T> T getApi(Class<T> requiredType, String name, long version, boolean useRegex) {
+        String key = convertKey(name, requiredType);
         synchronized (mSingletonBeans) {
-            for (Object obj : mSingletonBeans.values()) {
-                if (requiredType.isInstance(obj)) {
-                    api = (T) obj;
-                    mSingletonBeans.put(key, api);
-                    return api;
-                }
+            if (mSingletonBeans.containsKey(key)) {
+                return (T) mSingletonBeans.get(key);
             }
-            api = newApi(requiredType);
-            //noinspection ConstantConditions
-            if (api != null) {
-                mSingletonBeans.put(key, api);
-                Impl annotation = getAnnotation(api.getClass(), Impl.class);
-                if (annotation != null && !annotation.name().isEmpty()) {
-                    key = convertKey(annotation.name(), requiredType);
-                    mSingletonBeans.put(key, api);
-                }
+        }
+        Class<? extends T> impl = findApiImpl(name, version, requiredType, useRegex);
+        if (impl == null) {
+            if (!Modifier.isAbstract(requiredType.getModifiers())) {
+                impl = requiredType;
             }
+        }
+        T api = createApiImpl(impl);
+        synchronized (mSingletonBeans) {
+            mSingletonBeans.put(key, api);
         }
         return api;
     }
 
-    public <T> Collection<Class<? extends T>> getApiImpls(Class<T> requiredType) {
-        List<Class<? extends T>> apiImpls = new LinkedList<>();
-        Collection<Class<? extends T>> impls;
-        Impl impl;
+    @Override
+    public <T> T newApiImpl(Class<T> api) {
+        Class<? extends T> impl;
+        if (Modifier.isAbstract(api.getModifiers())) {
+            impl = findApiImpl(null, 0, api, false);
+        } else {
+            impl = api;
+        }
+        return createApiImpl(impl);
+    }
+
+    private String convertKey(String name, Class<?> type) {
+        String key = type.getSimpleName();
+        if (TextUtils.isEmpty(name)) {
+            return key;
+        }
+        if (key.equalsIgnoreCase(name)) {
+            return key;
+        }
+        return key + "#" + name;
+    }
+
+    private <T> Class<? extends T> findApiImpl(String name, long version, Class<T> apiClass, boolean useRegex) {
+        List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> imps = filterApiImpls(apiClass);
+        if (!TextUtils.isEmpty(name)) {
+            imps = filterApiImplsByNameAndRegex(name, imps, useRegex);
+        }
+        return filterApiImplByVersion(version, imps);
+    }
+
+    private <T> List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> filterApiImpls(Class<T> requiredType) {
+        List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> apiImpls = new LinkedList<>();
         String name;
         Boolean enabled;
         for (ApiImpls imp : mApiImpls) {
-            impls = imp.getApiImpls(requiredType);
-            if (impls != null) {
-                for (Class<? extends T> cls : impls) {
-                    impl = cls.getAnnotation(Impl.class);
-                    if (impl != null) {
-                        name = impl.name();
+            Map<Class<? extends T>, ApiImpls.NameVersion> apiImplsMap = imp.getApiImpls(requiredType);
+            if (apiImplsMap != null) {
+                for (Map.Entry<Class<? extends T>, ApiImpls.NameVersion> entry : apiImplsMap.entrySet()) {
+                    ApiImpls.NameVersion value = entry.getValue();
+                    if (value != null) {
+                        name = value.getName();
                         if (!name.isEmpty()) {
                             enabled = isImplEnabled(name);
                             if (enabled != null && !enabled) {
@@ -252,66 +214,70 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
                             }
                         }
                     }
-                    apiImpls.add(cls);
+                    apiImpls.add(entry);
                 }
             }
         }
         return apiImpls;
     }
 
-    @SuppressWarnings("WeakerAccess")
-    protected String convertKey(String name, Class<?> type) {
-        String key = type.getSimpleName();
-        if (name.isEmpty() || key.equalsIgnoreCase(name)) {
-            return key;
+    private <T> Class<? extends T> filterApiImplByVersion(long version, List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> apiImps) {
+        if (version >= 0) {
+            for (Map.Entry<Class<? extends T>, ApiImpls.NameVersion> entry : apiImps
+            ) {
+                if (entry.getValue() != null && entry.getValue().getVersion() == version) {
+                    return entry.getKey();
+                }
+            }
+        } else {
+            int size = apiImps.size();
+            Collections.sort(apiImps, (o1, o2) -> (int) (o1.getValue().getVersion() - o2.getValue().getVersion()));
+            int idx = size + (int) version;
+            if (idx < 0) {
+                idx = 0;
+            }
+            return apiImps.get(idx).getKey();
         }
-        return key + "#" + name;
-    }
-
-    @Override
-    public <T> Class<? extends T> getApiImpl(String name, Class<T> api) {
-        return findApiImpl(name, api, true);
-    }
-
-    @Override
-    public <T> T getApi(String name, Class<T> requiredType) {
-        return getApi(name, requiredType, true);
-    }
-
-    @Override
-    public <T> T getApi(String name, Class<T> requiredType, long version) {
         return null;
     }
 
-    @SuppressWarnings("unchecked")
-    protected <T> T getApi(String name, Class<T> requiredType, boolean useRegex) {
-        if (name == null) {
-            name = "";
-        }
-        String key = convertKey(name, requiredType);
-        synchronized (mSingletonBeans) {
-            if (mSingletonBeans.containsKey(key)) {
-                return (T) mSingletonBeans.get(key);
+    private <T> List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> filterApiImplsByNameAndRegex(String name, List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> apiImps, boolean useRegex) {
+        List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> temp = new ArrayList<>();
+        for (Map.Entry<Class<? extends T>, ApiImpls.NameVersion> imp : apiImps) {
+            if (imp.getValue() == null) continue;
+            if (!useRegex && name.equals(imp.getValue().getName())) {
+                temp.add(imp);
+            } else if (useRegex && Pattern.matches(name, imp.getValue().getName())) {
+                temp.add(imp);
             }
-            Class<? extends T> impl = findApiImpl(name, requiredType, useRegex);
-            if (impl == null) {
-                if (!Modifier.isAbstract(requiredType.getModifiers())) {
-                    impl = requiredType;
-                }
-            }
-            T api = createApi(name, impl);
-            mSingletonBeans.put(key, api);
-            return api;
         }
+        return temp;
+    }
+
+    @Nullable
+    private <T> T createApiImpl(Class<? extends T> impl) {
+        if (impl == null) {
+            return null;
+        }
+        T obj = null;
+        try {
+            obj = impl.newInstance();
+        } catch (Exception ex) {
+
+        }
+        if (obj instanceof ApiImplContextAware) {
+            ((ApiImplContextAware) obj).setApiImplContext(this);
+        }
+        return obj;
     }
 
     @Override
     public <T> T hasApi(Class<T> requiredType) {
-        T api = hasApi("", requiredType);
+        T api = hasApi(requiredType, "");
         if (api != null) {
             return api;
         }
-        api = hasApi(requiredType.getSimpleName(), requiredType);
+        api = hasApi(requiredType, requiredType.getSimpleName());
         if (api != null) {
             return api;
         }
@@ -330,7 +296,7 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
     }
 
     @Override
-    public <T> T hasApi(String name, Class<T> requiredType) {
+    public <T> T hasApi(Class<T> requiredType, String name) {
         if (name == null) {
             name = "";
         }
@@ -348,11 +314,11 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
     public <T> T newApi(Class<T> api) {
         Class<? extends T> impl;
         if (Modifier.isAbstract(api.getModifiers())) {
-            impl = findApiImpl(null, api, false);
+            impl = findApiImpl(null,  0, api, false);
         } else {
             impl = api;
         }
-        return createApi(null, impl);
+        return createApiImpl(impl);
     }
 
     @Override
@@ -521,98 +487,10 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
     public void execute(Runnable command) {
         mExecutorService.execute(command);
     }
+
     @Override
     public void execute(Runnable command, long priority) {
-        mExecutorService.execute(new PrioritizedRunnable(command , priority));
-    }
-    @SuppressWarnings("WeakerAccess")
-    protected <T> Class<? extends T> findApiImpl(String name, Class<T> requiredType, boolean useRegex) {
-        Collection<Class<? extends T>> imps = getApiImpls(requiredType);
-        Class<? extends T> impl = findApiImpl(name, imps, useRegex);
-        if (impl != null) {
-            return impl;
-        }
-        if (name != null) {
-            return null;
-        }
-        impl = findApiImpl(requiredType.getSimpleName(), imps, false);
-        if (impl != null) {
-            return impl;
-        }
-        if (imps.size() > 0) {
-            return imps.iterator().next();
-        }
-        return null;
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    protected <T> Class<? extends T> findApiImpl(String name, Collection<Class<? extends T>> imps, boolean useRegex) {
-        if (name == null) {
-            name = "";
-        }
-        if (name.isEmpty()) {
-            useRegex = false;
-        }
-        Class<? extends T> impRegex = null;
-        Impl api;
-        String pattern;
-        for (Class<? extends T> imp : imps) {
-            api = getAnnotation(imp, Impl.class);
-            if (api == null) {
-                continue;
-            }
-            if (name.equals(api.name())) {
-                return imp;
-            }
-
-            if (useRegex && impRegex == null) {
-                pattern = api.name();
-                if (!pattern.isEmpty() && Pattern.matches(pattern, name)) {
-                    impRegex = imp;
-                }
-            }
-        }
-        return impRegex;
-    }
-
-    /**
-     * @param name api impl name
-     * @param impl api impl class
-     * @param <T>  T
-     * @return object of T
-     */
-    @SuppressWarnings("WeakerAccess")
-    @Nullable
-    protected <T> T createApi(String name, Class<? extends T> impl) {
-        if (impl == null) {
-            return null;
-        }
-        T obj = null;
-        try {
-            obj = impl.newInstance();
-        } catch (Exception ex) {
-            reportException(TAG, ex);
-        }
-        if (obj instanceof ApiImplContextAware) {
-            ((ApiImplContextAware) obj).setApiImplContext(this);
-        }
-        return obj;
-    }
-
-    @SuppressWarnings({"WeakerAccess", "unchecked"})
-    public <A extends Annotation> A getAnnotation(Class<?> cls, Class<A> annotationClass) {
-        A a = cls.getAnnotation(annotationClass);
-        if (a != null) {
-            return a;
-        }
-        String annotationClassname = annotationClass.getName();
-        for (Annotation annotation : cls.getAnnotations()) {
-            if (annotationClassname.equals(annotation.getClass().getName())) {
-                a = (A) annotation;
-                return a;
-            }
-        }
-        return null;
+        mExecutorService.execute(new PrioritizedRunnable(command, priority));
     }
 
     /**

@@ -7,23 +7,40 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.Collection;
-import java.util.concurrent.RejectedExecutionException;
 
 public interface ApiImplContext {
 
     <T> Collection<Class<? extends T>> getApiImpls(Class<T> requiredType);
 
-    <T> Class<? extends T> getApiImpl(String name, Class<T> requiredType);
+    <T> Class<? extends T> getApiImplByVersion(Class<T> requiredType, long version);
+
+    <T> Class<? extends T> getApiImplByName(Class<T> requiredType, String name);
+
+    <T> Class<? extends T> getApiImplByName(Class<T> requiredType, String name, long version);
+
+    <T> Class<? extends T> getApiImplByRegex(Class<T> requiredType, String regex);
+
+    <T> Class<? extends T> getApiImplByRegex(Class<T> requiredType, String regex, long version);
+
+    <T> Class<? extends T> getApiImpl(Class<T> requiredType, String name, long version, boolean useRegex);
 
     <T> T getApi(Class<T> requiredType);
 
-    <T> T getApi(String name, Class<T> requiredType);
+    <T> T getApiByName(Class<T> requiredType, String name);
 
-    <T> T getApi(String name, Class<T> requiredType, long version);
+    <T> T getApiByName(Class<T> requiredType, String name, long version);
+
+    <T> T getApiByRegex(Class<T> requiredType, String regex);
+
+    <T> T getApiByRegex(Class<T> requiredType, String regex, long version);
+
+    <T> T getApi(Class<T> requiredType, String name, long version, boolean useRegex);
+
+    <T> T newApiImpl(Class<T> requiredType);
 
     <T> T hasApi(Class<T> requiredType);
 
-    <T> T hasApi(String name, Class<T> requiredType);
+    <T> T hasApi(Class<T> requiredType , String name);
 
     <T> T newApi(Class<T> requiredType);
 
@@ -63,8 +80,7 @@ public interface ApiImplContext {
 
     void execute(Runnable command, long priority);
 
-    boolean post(Runnable command);
+    void post(Runnable command);
 
-    boolean postDelayed(Runnable command, long delayMillis);
-
+    void postDelayed(Runnable command, long delayMillis);
 }

@@ -12,18 +12,6 @@ public abstract class AbstractFragment extends Fragment implements ActivityApi.O
     private String TAG = getClass().getName();
     protected boolean mHasModify = false;
     private ApiImplContext mApiImplContext;
-
-    public AbstractFragment() {
-    }
-
-    protected <T extends View> T findViewById(int res) {
-        View view = getView();
-        if (view != null) {
-            return view.findViewById(res);
-        }
-        return null;
-    }
-
     /**
      * Get the singleton ApiImplContext object.
      */
@@ -46,12 +34,6 @@ public abstract class AbstractFragment extends Fragment implements ActivityApi.O
         }
     }
 
-    /**
-     * Called when the activity has detected the user's press of the back key. The default implementation simply finishes the current activity, but you can
-     * implement this interface on your fragment to do whatever you want.
-     *
-     * @return true if you handled this event, false if you want activity handled this event.
-     */
     @Override
     public boolean onBackPressed() {
         if (mHasModify) {
@@ -60,9 +42,6 @@ public abstract class AbstractFragment extends Fragment implements ActivityApi.O
         return false;
     }
 
-    /**
-     * Load a {@link Fragment} to {@link Activity}
-     */
     protected void loadFragment(Fragment fragment, boolean addToBackStack) {
         Activity activity = getActivity();
         if (activity instanceof ActivityApi) {

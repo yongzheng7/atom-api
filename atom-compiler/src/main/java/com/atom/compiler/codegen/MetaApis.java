@@ -78,27 +78,10 @@ public class MetaApis {
                     mContext.putApi(apiQualifiedName);
                 }
                 List<SingleImpl> singleList = new ArrayList<>();
-                List<ClassName> implNames = getImplNames(next, apies, singleList);
-                if (!implNames.isEmpty()) {
-                    int size = implNames.size();
-                    StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.append("add(");
-                    for (; size != 0; size--) {
-                        stringBuilder.append("$L.class");
-                        if (size != 1) {
-                            stringBuilder.append(",");
-                        }
-                    }
-                    stringBuilder.append(")");
-                    String s = stringBuilder.toString();
-                    mContext.logger().warning("warning >>> " + s);
-                    ClassName[] classNames = implNames.toArray(new ClassName[]{});
-                    constructorBuilder.addStatement(s, (Object[]) classNames);
-                    for (SingleImpl impl : singleList
-                    ) {
-                        if(impl.name.isEmpty()) continue;
-                        constructorBuilder.addStatement("add($S , $L.class , $L.class , "+impl.version+")" , impl.name , impl.apiClass , impl.implClass);
-                    }
+                getImplNames(next, apies, singleList);
+                for (SingleImpl impl : singleList
+                ) {
+                    constructorBuilder.addStatement("add($S , $L.class , $L.class , "+impl.version+")" , impl.name , impl.apiClass , impl.implClass);
                 }
             }
         }
@@ -119,21 +102,15 @@ public class MetaApis {
         }
     }
 
-    private List<ClassName> getImplNames(MetaApi api, Collection<MetaApi> impls, List<SingleImpl> result) {
-        final List<ClassName> list = new ArrayList<>();
+    private void getImplNames(MetaApi api, Collection<MetaApi> impls, List<SingleImpl> result) {
         ClassName apiClassName = ClassName.get(api.getApiTypeElement());
         for (MetaApi metaApi : impls) {
             if (!metaApi.isApiImpl(api.getApiQualifiedName())) {
                 continue;
             }
             ClassName implClassName = ClassName.get(metaApi.getImplTypeElement());
-            list.add(implClassName);
             result.add(new SingleImpl(apiClassName, implClassName, metaApi.getImplAnnotationName(), metaApi.getImplAnnotationVersion()));
         }
-        if (!list.isEmpty()) {
-            list.add(0, apiClassName);
-        }
-        return list;
     }
 
     static class SingleImpl {
