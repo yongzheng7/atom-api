@@ -1,3 +1,4 @@
+include ':atom-plugin'
 include ':atom-annotation'
 include ':atom-compiler'
 include ':data'

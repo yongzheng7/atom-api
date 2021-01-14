@@ -6,8 +6,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import com.atom.annotation.Impl;
 import com.atom.api.ApiImplContext;
 import com.atom.api.app.Hello;
@@ -28,9 +26,15 @@ public class MainActivity extends AbstractActivity {
                 api.hello();
             }
             Toast.makeText(this, "mainActivity", Toast.LENGTH_SHORT).show();
+            loadFragment(new MainFragment() , true);
         });
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        loadFragment(new MainFragment() , true);
+    }
 
     @Override
     protected int getFrameLayout() {

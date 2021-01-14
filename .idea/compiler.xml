@@ -25,6 +25,7 @@
       <module name="apt" target="1.7" />
       <module name="atom-annotation" target="1.7" />
       <module name="atom-compiler" target="1.7" />
+      <module name="atom-plugin" target="1.7" />
     </bytecodeTargetLevel>
   </component>
 </project>

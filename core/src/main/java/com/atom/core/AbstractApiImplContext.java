@@ -2,8 +2,6 @@ package com.atom.core;
 
 import android.app.Application;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -13,27 +11,19 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.atom.annotation.Impl;
 import com.atom.annotation.bean.ApiImpls;
 import com.atom.api.ApiImplContext;
 import com.atom.api.ApiImplContextAware;
-import com.atom.core.utils.ClassUtils;
 
 import android.text.TextUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.annotation.Annotation;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Modifier;
-import java.net.JarURLConnection;
-import java.net.URL;
-import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -63,20 +53,7 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
     }
 
     private void loadPackages() {
-        List<Class<?>> classes = ClassUtils.getClasses("com.atom.apt");
-        for (Class<?> clazz : classes
-        ) {
-            ApiImpls apiImpls = null;
-            try {
-                apiImpls = (ApiImpls) clazz.newInstance();
-            } catch (IllegalAccessException | InstantiationException e) {
-                e.printStackTrace();
-            }
-            if (apiImpls instanceof ApiImplContextAware) {
-                ((ApiImplContextAware) apiImpls).setApiImplContext(this);
-            }
-            mApiImpls.add(apiImpls);
-        }
+
     }
 
     @Override

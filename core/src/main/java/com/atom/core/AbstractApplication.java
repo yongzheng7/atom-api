@@ -1,5 +1,7 @@
 package com.atom.core;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.multidex.MultiDexApplication;
 
@@ -12,9 +14,16 @@ public abstract class AbstractApplication extends MultiDexApplication implements
 
     protected WeakReference<ApiImplContext> ApiImplContextWeakReference = null;
 
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Log.e("ApiImplContext" , " AbstractApiImplContext onCreate   000 ") ;
+    }
+
     @NonNull
     @Override
     public ApiImplContext getApiImplContext() {
+        Log.e("ApiImplContext" , " AbstractApiImplContext init   000123 ") ;
         ApiImplContext apiImplContext = null;
         if (ApiImplContextWeakReference != null) {
             apiImplContext = ApiImplContextWeakReference.get();
