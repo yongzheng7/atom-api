@@ -14,19 +14,13 @@ import java.util.Map;
 
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 
 @SuppressWarnings({"WeakerAccess"})
 public final class Context {
 
-    private final static SimpleDateFormat DATEFORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-    private final static String aptPath = "com.atom.apt";
-
-    private final Collection<String> generatedModelClasses = new HashSet<>();
     private final Collection<String> apiClass = new HashSet<>();
-
     private final ProcessingEnvironment processingEnv;
     private final Filer mFiler;
     private final Logger logger;
@@ -50,7 +44,7 @@ public final class Context {
         logger = new Logger(processingEnv.getMessager(), debug);
         if (StringUtils.isNotEmpty(moduleName)) {
             moduleName = moduleName.replaceAll("[^0-9a-zA-Z_]+", "");
-            moduleName = Consts.TAG + Consts.upperFirstLetter(moduleName);
+            moduleName = Consts.TAG + Consts.upperFirstLetter(moduleName)+Consts.PROXY;
             logger.info("The user has configuration the module name, it was [" + moduleName + "]");
         } else {
             logger.error("Module name is Empty !!!");
@@ -87,11 +81,11 @@ public final class Context {
     }
 
     public String packet() {
-        return aptPath;
+        return Consts.APTPATH;
     }
 
     public SimpleDateFormat dateformat() {
-        return DATEFORMAT;
+        return Consts.DATEFORMAT;
     }
 
     public String getModuleName() {

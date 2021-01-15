@@ -10,7 +10,7 @@ buildscript {
     }
     dependencies {
         classpath "com.android.tools.build:gradle:4.0.0"
-        classpath 'com.atom.plugin:atom-plugin:1.0.0'
+        classpath 'com.atom.plugin:api-plugin:1.0.3'
     }
 }
 
@@ -19,6 +19,10 @@ allprojects {
         google()
         jcenter()
         mavenCentral()
+        mavenLocal()
+        maven {
+            url '../repository'
+        }
     }
 }
 

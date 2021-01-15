@@ -25,16 +25,39 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 public abstract class AbstractApiImplContext implements ApiImplContext {
+
+    private static final Set<Class<? extends ApiImpls>> registerClass = new HashSet<>();
+
+    private static void loadProxyClass(){
+
+    }
+    private static void registerClass(String className) {
+        if (!TextUtils.isEmpty(className)) {
+            Log.e("register class start:", className);
+            try {
+                Class<?> clazz = Class.forName(className);
+                if (ApiImpls.class.isAssignableFrom(clazz)) {
+                    registerClass.add((Class<? extends ApiImpls>) clazz);
+                }
+            } catch (Exception e) {
+                Log.e("register class error:" + className, Objects.requireNonNull(e.getLocalizedMessage()));
+            }
+        }
+    }
+
 
     private final Map<String, WeakReference<Object>> mCaches = new HashMap<>();
     private final Map<String, Object> mSingletonBeans = new HashMap<>();
@@ -49,11 +72,24 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
     public AbstractApiImplContext(Application application) {
         mApplication = application;
         mExecutorService = Executors.newCachedThreadPool();
+        loadProxyClass() ;
         loadPackages();
     }
 
     private void loadPackages() {
-
+        Log.e("AbstractApiImplContext" , "AbstractApiImplContext:loadPackages" +  registerClass.size());
+        for (Class<? extends ApiImpls> clazz : registerClass) {
+            try {
+                ApiImpls apiImpls = clazz.newInstance();
+                if (apiImpls instanceof ApiImplContextAware) {
+                    ((ApiImplContextAware) apiImpls).setApiImplContext(this);
+                }
+                mApiImpls.add(apiImpls);
+                Log.d("AbstractApiImplContext" , clazz.getCanonicalName() + " succeed");
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Override
@@ -291,7 +327,7 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
     public <T> T newApi(Class<T> api) {
         Class<? extends T> impl;
         if (Modifier.isAbstract(api.getModifiers())) {
-            impl = findApiImpl(null,  0, api, false);
+            impl = findApiImpl(null, 0, api, false);
         } else {
             impl = api;
         }

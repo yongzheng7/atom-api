@@ -53,6 +53,5 @@ dependencies {
     api project(':api')
 
     annotationProcessor project(':atom-compiler')
-    androidTestAnnotationProcessor project(':atom-compiler')
 
 }

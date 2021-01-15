@@ -45,6 +45,7 @@ dependencies {
 
     api project(':api')
     implementation project(':core')
+    implementation project(':data')
 
     annotationProcessor project(':atom-compiler')
 }
