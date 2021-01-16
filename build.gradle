@@ -7,10 +7,14 @@ buildscript {
         maven {
             url './repository'
         }
+        maven { url "https://jitpack.io" }
     }
     dependencies {
         classpath "com.android.tools.build:gradle:4.0.0"
-        classpath 'com.atom.plugin:api-plugin:1.0.3'
+        classpath 'com.atom.plugin:atom-plugin:1.0.2'
+        //classpath 'com.atom.plugin:atom-plugin:1.0.1'
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5'
     }
 }
 
@@ -23,6 +27,7 @@ allprojects {
         maven {
             url '../repository'
         }
+        maven { url "https://jitpack.io" }
     }
 }
 

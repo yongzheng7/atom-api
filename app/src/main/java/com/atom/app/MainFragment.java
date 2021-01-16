@@ -50,6 +50,17 @@ public class MainFragment extends AbstractFragment {
                 Log.e(getTag() , Objects.requireNonNull(clazz.getCanonicalName())) ;
             }
             Log.e(getTag() , "------------------------------- \n") ;
+
+            Log.e(getTag() , "实现 Hello interface 的子类 ----start name = null version = -1 \n") ;
+            Class<? extends Hello> apiImplByName = apiImplContext().getApiImplByName(Hello.class, null, 4);
+            if(apiImplByName == null){
+                Log.e(getTag() ," version = 4 is null") ;
+            }else{
+                Log.e(getTag() , Objects.requireNonNull(Objects.requireNonNull(apiImplByName).getCanonicalName())) ;
+            }
+
+            Log.e(getTag() , "------------------------------- \n") ;
+
         });
     }
 
