@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Vector;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
 public class AtomApi {
@@ -38,24 +38,44 @@ public class AtomApi {
         void setApiContextAware(AtomApi atomApi);
     }
 
+    public interface UIThreadHandler {
+
+        boolean post(Runnable action);
+
+        boolean postDelayed(Runnable action, long delayMillis);
+    }
+
+    public interface IOThreadHandler {
+
+        void execute(Runnable command);
+
+        Future<?> submit(Runnable task);
+    }
+
+    public interface ExceptionHandler {
+
+        void report(String tag, Throwable throwable);
+    }
+
     private static class SingletonInner {
         private static AtomApi singletonStaticInner = new AtomApi();
     }
 
     public static AtomApi init(Application application) {
-        mApplication = application ;
-        return init();
+        AtomApi init = init();
+        init.mApplication = application;
+        return init;
     }
+
     public static AtomApi init() {
         return SingletonInner.singletonStaticInner;
     }
 
-    private static Application mApplication;
-    private static ExecutorService mExecutorService;
     private static final Set<Class<? extends ApiImpls>> registerClass = new HashSet<>();
-    private static void loadProxyClass() {
 
+    private static void loadProxyClass() {
     }
+
     private static void registerClass(String className) {
         if (!TextUtils.isEmpty(className)) {
             try {
@@ -68,6 +88,11 @@ public class AtomApi {
             }
         }
     }
+
+    private Application mApplication;
+    private AtomApi.UIThreadHandler mUIThreadHandler;
+    private AtomApi.IOThreadHandler mIOThreadHandler;
+    private AtomApi.ExceptionHandler mExceptionHandler;
 
     private final Map<String, WeakReference<Object>> mCaches = new HashMap<>();
     private final Map<String, Object> mSingletonBeans = new HashMap<>();
@@ -350,6 +375,24 @@ public class AtomApi {
     }
 
     @NonNull
+    public AtomApi setUIThreadHandler(AtomApi.UIThreadHandler uiThreadHandler) {
+        this.mUIThreadHandler = uiThreadHandler;
+        return this;
+    }
+
+    @NonNull
+    public AtomApi setIOThreadHandler(AtomApi.IOThreadHandler ioThreadHandler) {
+        this.mIOThreadHandler = ioThreadHandler;
+        return this;
+    }
+
+    @NonNull
+    public AtomApi setExceptionHandler(AtomApi.ExceptionHandler exceptionHandler) {
+        this.mExceptionHandler = exceptionHandler;
+        return this;
+    }
+
+    @NonNull
     public String cachePut(@NonNull Object data) {
         if (System.currentTimeMillis() - mCachesLastCheckTime > 24 * 3600 * 1000L) {
             mCachesLastCheckTime = System.currentTimeMillis();
@@ -431,5 +474,30 @@ public class AtomApi {
             }
         }
         return null;
+    }
+
+
+    public boolean post(@NonNull Runnable action) {
+        return mUIThreadHandler != null && mUIThreadHandler.post(action);
+    }
+
+    public boolean postDelayed(@NonNull Runnable action, long delayMillis) {
+        return mUIThreadHandler != null && mUIThreadHandler.postDelayed(action, delayMillis);
+    }
+
+    public void execute(@NonNull Runnable command) {
+        if (mIOThreadHandler != null) {
+            mIOThreadHandler.execute(command);
+        }
+    }
+
+    public Future<?> submit(@NonNull Runnable task) {
+        return mIOThreadHandler != null ? mIOThreadHandler.submit(task) : null;
+    }
+
+    public void report(@NonNull String tag, Throwable throwable) {
+        if (mExceptionHandler != null) {
+            mExceptionHandler.report(tag, throwable);
+        }
     }
 }

@@ -18,22 +18,20 @@ public class Logger {
         this.debug = debug;
     }
 
-    /**
-     * Print info log.
-     */
-    public void info(CharSequence info) {
+
+    public void info(String info) {
         if (StringUtils.isNotEmpty(info)&&debug) {
             msg.printMessage(Diagnostic.Kind.NOTE,  info+"\n");
         }
     }
 
-    public void error(CharSequence error) {
+    public void error(String error) {
         if (StringUtils.isNotEmpty(error)&&debug) {
             msg.printMessage(Diagnostic.Kind.ERROR,  "An exception is encountered, [" + error + "]"+"\n");
         }
     }
 
-    public void error(CharSequence error, Element var3) {
+    public void error(String error, Element var3) {
         if (StringUtils.isNotEmpty(error) && var3 != null&&debug) {
             msg.printMessage(Diagnostic.Kind.ERROR,  "An exception is encountered, [" + error + "]"+"\n", var3);
         }
