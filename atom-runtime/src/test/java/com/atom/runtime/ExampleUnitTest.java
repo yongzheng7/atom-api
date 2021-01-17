@@ -1,4 +1,4 @@
-package com.atom.core;
+package com.atom.runtime;
 
 import org.junit.Test;
 

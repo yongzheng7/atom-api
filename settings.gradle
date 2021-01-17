@@ -1,9 +1,10 @@
+include ':atom-runtime'
 include ':atom-plugin'
 include ':atom-annotation'
 include ':atom-compiler'
 include ':data'
 include ':api'
-include ':core'
+//include ':core'
 //include ':apt'
 include ':app'
 rootProject.name = "atom"

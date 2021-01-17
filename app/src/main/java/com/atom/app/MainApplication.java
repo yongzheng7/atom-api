@@ -1,9 +1,16 @@
 package com.atom.app;
 
+import android.app.Application;
+
 import com.atom.annotation.Impl;
-import com.atom.core.AbstractApplication;
+import com.atom.runtime.AtomApi;
+
 @Impl(api = MainApplication.class)
-public class MainApplication extends AbstractApplication {
+public class MainApplication extends Application {
 
-
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        AtomApi.init(this);
+    }
 }

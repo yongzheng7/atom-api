@@ -1,22 +1,18 @@
-package com.atom.core.ui;
+package com.atom.app.base;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.os.Bundle;
 import android.view.KeyEvent;
-import android.view.Window;
-
 
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.atom.api.ApiImplContext;
-import com.atom.api.ApiImplContextApplication;
 import com.atom.api.core.ui.ActivityApi;
+import com.atom.runtime.AtomApi;
 
 @SuppressWarnings("unused")
 public abstract class AbstractActivity extends FragmentActivity implements ActivityApi {
@@ -30,10 +26,10 @@ public abstract class AbstractActivity extends FragmentActivity implements Activ
     }
 
     @Override
-    public ApiImplContext apiImplContext() {
-        Context context = this.getApplicationContext();
-        if (context instanceof ApiImplContextApplication) {
-            return ((ApiImplContextApplication) context).getApiImplContext();
+    public AtomApi apiImplContext() {
+        AtomApi init = AtomApi.init();
+        if (init != null) {
+            return init;
         }
         throw new RuntimeException("Your Application can't instanceof AapiImplContext!");
     }
@@ -44,11 +40,7 @@ public abstract class AbstractActivity extends FragmentActivity implements Activ
     }
 
     protected void reportException(Exception ex) {
-        try {
-            apiImplContext().reportException(TAG, ex);
-        } catch (Exception e) {
-            ex.printStackTrace();
-        }
+
     }
 
     protected abstract int getFrameLayout() ;

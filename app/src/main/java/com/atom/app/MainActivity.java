@@ -7,9 +7,9 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.atom.annotation.Impl;
-import com.atom.api.ApiImplContext;
 import com.atom.api.app.Hello;
-import com.atom.core.ui.AbstractActivity;
+import com.atom.app.base.AbstractActivity;
+import com.atom.runtime.AtomApi;
 
 @Impl(api = Activity.class)
 public class MainActivity extends AbstractActivity {
@@ -20,8 +20,8 @@ public class MainActivity extends AbstractActivity {
         setContentView(R.layout.activity_main);
         View viewById = findViewById(getFrameLayout());
         viewById.setOnClickListener(view -> {
-            ApiImplContext apiImplContext = apiImplContext();
-            Hello api = apiImplContext.getApi(Hello.class);
+            AtomApi atomApi = apiImplContext();
+            Hello api = atomApi.getApi(Hello.class);
             if (api != null) {
                 api.hello();
             }

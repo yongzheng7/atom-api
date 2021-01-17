@@ -6,7 +6,7 @@ import android.view.KeyEvent;
 
 import androidx.fragment.app.Fragment;
 
-import com.atom.api.ApiImplContext;
+import com.atom.runtime.AtomApi;
 
 
 public interface ActivityApi {
@@ -16,7 +16,7 @@ public interface ActivityApi {
      *
      * @return api implemnet context
      */
-    ApiImplContext apiImplContext();
+    AtomApi apiImplContext();
 
     /**
      * Get Actitity

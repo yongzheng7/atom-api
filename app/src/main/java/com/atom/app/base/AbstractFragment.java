@@ -1,37 +1,33 @@
-package com.atom.core.ui;
+package com.atom.app.base;
 
 import android.app.Activity;
-import android.view.View;
 
 import androidx.fragment.app.Fragment;
 
-import com.atom.api.ApiImplContext;
 import com.atom.api.core.ui.ActivityApi;
+import com.atom.runtime.AtomApi;
 
 public abstract class AbstractFragment extends Fragment implements ActivityApi.OnBackPressedListener {
     private String TAG = getClass().getName();
     protected boolean mHasModify = false;
-    private ApiImplContext mApiImplContext;
+    private AtomApi atomApi;
     /**
      * Get the singleton ApiImplContext object.
      */
-    public ApiImplContext apiImplContext() {
-        if (mApiImplContext == null) {
+    public AtomApi apiImplContext() {
+        if (atomApi == null) {
             Activity activity = this.getActivity();
             if (activity instanceof ActivityApi) {
-                mApiImplContext = ((ActivityApi) activity).apiImplContext();
+                atomApi = ((ActivityApi)activity).apiImplContext();
             } else {
                 throw new RuntimeException("Your Activity can't instanceof ActivityApi!");
             }
         }
-        return mApiImplContext;
+        return atomApi;
     }
 
     protected void reportException(Exception ex) {
-        ApiImplContext apiImplContext = apiImplContext();
-        if (apiImplContext != null && apiImplContext.isDebugEnabled()) {
-            apiImplContext.reportException(TAG, ex);
-        }
+
     }
 
     @Override

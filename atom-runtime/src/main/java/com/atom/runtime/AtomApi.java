@@ -1,21 +1,17 @@
-package com.atom.core;
+package com.atom.runtime;
 
 import android.app.Application;
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.text.TextUtils;
 import android.util.Log;
-
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.atom.annotation.bean.ApiImpls;
-import com.atom.api.ApiImplContext;
-import com.atom.api.ApiImplContextAware;
-
-import android.text.TextUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,19 +30,34 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
-public abstract class AbstractApiImplContext implements ApiImplContext {
+public class AtomApi {
 
+    public interface ApiContextAware {
+        void setApiContextAware(AtomApi atomApi);
+    }
+
+    private static class SingletonInner {
+        private static AtomApi singletonStaticInner = new AtomApi();
+    }
+
+    public static AtomApi init(Application application) {
+        mApplication = application ;
+        return init();
+    }
+    public static AtomApi init() {
+        return SingletonInner.singletonStaticInner;
+    }
+
+    private static Application mApplication;
+    private static ExecutorService mExecutorService;
     private static final Set<Class<? extends ApiImpls>> registerClass = new HashSet<>();
-
-    private static void loadProxyClass(){
+    private static void loadProxyClass() {
 
     }
     private static void registerClass(String className) {
         if (!TextUtils.isEmpty(className)) {
-            Log.e("register class start:", className);
             try {
                 Class<?> clazz = Class.forName(className);
                 if (ApiImpls.class.isAssignableFrom(clazz)) {
@@ -58,41 +69,32 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         }
     }
 
-
     private final Map<String, WeakReference<Object>> mCaches = new HashMap<>();
     private final Map<String, Object> mSingletonBeans = new HashMap<>();
     private final Collection<String> mEnabledImpls = new Vector<>();
     private final Collection<String> mDisabledImpls = new Vector<>();
-    private final Application mApplication;
     private final List<ApiImpls> mApiImpls = new LinkedList<>();
-    private final ExecutorService mExecutorService;
     private long mCachesLastCheckTime = System.currentTimeMillis();
-    private boolean mIsDebug = false;
 
-    public AbstractApiImplContext(Application application) {
-        mApplication = application;
-        mExecutorService = Executors.newCachedThreadPool();
-        loadProxyClass() ;
+    private AtomApi() {
+        loadProxyClass();
         loadPackages();
     }
 
     private void loadPackages() {
-        Log.e("AbstractApiImplContext" , "AbstractApiImplContext:loadPackages" +  registerClass.size());
         for (Class<? extends ApiImpls> clazz : registerClass) {
             try {
                 ApiImpls apiImpls = clazz.newInstance();
-                if (apiImpls instanceof ApiImplContextAware) {
-                    ((ApiImplContextAware) apiImpls).setApiImplContext(this);
+                if (apiImpls instanceof ApiContextAware) {
+                    ((ApiContextAware) apiImpls).setApiContextAware(this);
                 }
                 mApiImpls.add(apiImpls);
-                Log.d("AbstractApiImplContext" , clazz.getCanonicalName() + " succeed");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
     }
 
-    @Override
     public <T> Collection<Class<? extends T>> getApiImpls(Class<T> requiredType) {
         List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> entryList = filterApiImpls(requiredType);
         List<Class<? extends T>> classes = new ArrayList<>();
@@ -103,62 +105,50 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         return Collections.unmodifiableCollection(classes);
     }
 
-    @Override
     public <T> Class<? extends T> getApiImplByVersion(Class<T> requiredType, long version) {
         return getApiImpl(requiredType, null, version, false);
     }
 
-    @Override
     public <T> Class<? extends T> getApiImplByName(Class<T> requiredType, String name) {
         return getApiImplByName(requiredType, name, 0);
     }
 
-    @Override
     public <T> Class<? extends T> getApiImplByName(Class<T> requiredType, String name, long version) {
         return getApiImpl(requiredType, name, version, false);
     }
 
-    @Override
     public <T> Class<? extends T> getApiImplByRegex(Class<T> requiredType, String regex) {
         return getApiImplByRegex(requiredType, regex, 0);
     }
 
-    @Override
     public <T> Class<? extends T> getApiImplByRegex(Class<T> requiredType, String regex, long version) {
         return getApiImpl(requiredType, regex, version, true);
     }
 
-    @Override
     public <T> Class<? extends T> getApiImpl(Class<T> requiredType, String name, long version, boolean useRegex) {
         return findApiImpl(name, version, requiredType, useRegex);
     }
 
-    @Override
     public <T> T getApi(Class<T> requiredType) {
         return getApi(requiredType, null, 0, false);
     }
 
-    @Override
     public <T> T getApiByName(Class<T> requiredType, String name) {
         return getApiByName(requiredType, name, 0);
     }
 
-    @Override
     public <T> T getApiByName(Class<T> requiredType, String name, long version) {
         return getApi(requiredType, name, version, false);
     }
 
-    @Override
     public <T> T getApiByRegex(Class<T> requiredType, String regex) {
         return getApiByRegex(requiredType, regex, 0);
     }
 
-    @Override
     public <T> T getApiByRegex(Class<T> requiredType, String regex, long version) {
         return getApi(requiredType, regex, version, true);
     }
 
-    @Override
     public <T> T getApi(Class<T> requiredType, String name, long version, boolean useRegex) {
         String key = convertKey(name, requiredType);
         synchronized (mSingletonBeans) {
@@ -179,7 +169,6 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         return api;
     }
 
-    @Override
     public <T> T newApiImpl(Class<T> api) {
         Class<? extends T> impl;
         if (Modifier.isAbstract(api.getModifiers())) {
@@ -267,7 +256,6 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         return temp;
     }
 
-    @Nullable
     private <T> T createApiImpl(Class<? extends T> impl) {
         if (impl == null) {
             return null;
@@ -278,13 +266,12 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         } catch (Exception ex) {
 
         }
-        if (obj instanceof ApiImplContextAware) {
-            ((ApiImplContextAware) obj).setApiImplContext(this);
+        if (obj instanceof ApiContextAware) {
+            ((ApiContextAware) obj).setApiContextAware(this);
         }
         return obj;
     }
 
-    @Override
     public <T> T hasApi(Class<T> requiredType) {
         T api = hasApi(requiredType, "");
         if (api != null) {
@@ -308,7 +295,6 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         return null;
     }
 
-    @Override
     public <T> T hasApi(Class<T> requiredType, String name) {
         if (name == null) {
             name = "";
@@ -323,7 +309,6 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         return null;
     }
 
-    @Override
     public <T> T newApi(Class<T> api) {
         Class<? extends T> impl;
         if (Modifier.isAbstract(api.getModifiers())) {
@@ -334,22 +319,18 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         return createApiImpl(impl);
     }
 
-    @Override
     public Context getAppContext() {
         return mApplication;
     }
 
-    @Override
     public String getString(int id) {
         return mApplication.getString(id);
     }
 
-    @Override
     public Bitmap getBitmap(int id) {
         return BitmapFactory.decodeResource(mApplication.getResources(), id);
     }
 
-    @Override
     public Bitmap decodeAssets(String path) {
         InputStream localInputStream = null;
         try {
@@ -368,7 +349,6 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         }
     }
 
-    @Override
     @NonNull
     public String cachePut(@NonNull Object data) {
         if (System.currentTimeMillis() - mCachesLastCheckTime > 24 * 3600 * 1000L) {
@@ -402,7 +382,6 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         }
     }
 
-    @Override
     @Nullable
     public Object cacheGet(@NonNull String key) {
         WeakReference<Object> weakReference;
@@ -415,7 +394,6 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         return weakReference.get();
     }
 
-    @Override
     @Nullable
     public Object cacheRemove(@NonNull String key) {
         synchronized (mCaches) {
@@ -423,13 +401,6 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         }
     }
 
-    /**
-     * Enable or disable implements by name
-     *
-     * @param name   name  of implements
-     * @param enable true enable, false disable
-     */
-    @Override
     public void enableImpl(@NonNull String name, Boolean enable) {
         name = name.trim();
         synchronized (mEnabledImpls) {
@@ -450,13 +421,6 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
         }
     }
 
-    /**
-     * Return the implements is enabled or not
-     *
-     * @param name name of implements
-     * @return true or false
-     */
-    @Override
     public Boolean isImplEnabled(@NonNull String name) {
         synchronized (mEnabledImpls) {
             if (mEnabledImpls.contains(name)) {
@@ -467,69 +431,5 @@ public abstract class AbstractApiImplContext implements ApiImplContext {
             }
         }
         return null;
-    }
-
-    @Override
-    public boolean isDebugEnabled() {
-        return mIsDebug;
-    }
-
-    @Override
-    public void debug(Object msg) {
-        if (mIsDebug) {
-            debug(Thread.currentThread().getStackTrace()[3], msg);
-        }
-    }
-
-    @Override
-    public void debug(StackTraceElement stack, Object msg) {
-        Log.w("AppDebug", stack.getClassName() + "." + stack.getMethodName() + "(" + stack.getFileName() + ":" + stack.getLineNumber() + ") " + msg);
-    }
-
-    @Override
-    public void enableDebug(boolean enable) {
-        mIsDebug = enable;
-    }
-
-    @Override
-    public void reportException(String tag, Throwable ex) {
-        // TODO 进行bug的本地和远程上传等操作
-    }
-
-    @Override
-    public void execute(Runnable command) {
-        mExecutorService.execute(command);
-    }
-
-    @Override
-    public void execute(Runnable command, long priority) {
-        mExecutorService.execute(new PrioritizedRunnable(command, priority));
-    }
-
-    /**
-     * Prioritized Runnable
-     */
-    protected static class PrioritizedRunnable implements Runnable, Comparable<PrioritizedRunnable> {
-        private final long timestamp;
-        private final Runnable runnable;
-
-        public PrioritizedRunnable(Runnable runnable, long timestamp) {
-            this.runnable = runnable;
-            this.timestamp = timestamp;
-        }
-
-        public long getTimestamp() {
-            return timestamp;
-        }
-
-        @Override
-        public int compareTo(PrioritizedRunnable secondOne) {
-            return Long.compare(this.getTimestamp(), secondOne.getTimestamp());
-        }
-
-        @Override
-        public void run() {
-            runnable.run();
-        }
     }
 }
