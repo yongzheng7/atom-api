@@ -13,6 +13,7 @@ import androidx.annotation.Nullable;
 
 import com.atom.annotation.bean.ApiImpls;
 
+import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
@@ -55,6 +56,11 @@ public class AtomApi {
     public interface ExceptionHandler {
 
         void report(String tag, Throwable throwable);
+    }
+
+    public interface ApiFilter<T> {
+
+        boolean accept(Class<? extends T> clazz, ApiImpls.NameVersion param);
     }
 
     private static class SingletonInner {
@@ -120,7 +126,7 @@ public class AtomApi {
         }
     }
 
-    public <T> Collection<Class<? extends T>> getApiImpls(Class<T> requiredType) {
+    public <T> Collection<Class<? extends T>> getApis(@NonNull Class<T> requiredType) {
         List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> entryList = filterApiImpls(requiredType);
         List<Class<? extends T>> classes = new ArrayList<>();
         for (Map.Entry<Class<? extends T>, ApiImpls.NameVersion> entry : entryList
@@ -130,97 +136,153 @@ public class AtomApi {
         return Collections.unmodifiableCollection(classes);
     }
 
-    public <T> Class<? extends T> getApiImplByVersion(Class<T> requiredType, long version) {
-        return getApiImpl(requiredType, null, version, false);
+    public <T> Collection<Class<? extends T>> getApis(@NonNull Class<T> requiredType, @NonNull String name, boolean useRegex) {
+        List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> entryList = filterApiImpls(requiredType);
+        if (!TextUtils.isEmpty(name)) {
+            entryList = filterApiImplsByNameAndRegex(name, entryList, useRegex);
+        }
+        List<Class<? extends T>> classes = new ArrayList<>();
+        for (Map.Entry<Class<? extends T>, ApiImpls.NameVersion> entry : entryList
+        ) {
+            classes.add(entry.getKey());
+        }
+        return Collections.unmodifiableCollection(classes);
     }
 
-    public <T> Class<? extends T> getApiImplByName(Class<T> requiredType, String name) {
-        return getApiImplByName(requiredType, name, 0);
+    public <T> Collection<Class<? extends T>> getApis(@NonNull Class<T> requiredType, @NonNull ApiFilter<T> filter) {
+        List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> entryList = filterApiImpls(requiredType);
+        List<Class<? extends T>> classes = new ArrayList<>();
+        for (Map.Entry<Class<? extends T>, ApiImpls.NameVersion> entry : entryList
+        ) {
+            if (filter.accept(entry.getKey(), entry.getValue())) {
+                classes.add(entry.getKey());
+            }
+        }
+        return Collections.unmodifiableCollection(classes);
     }
 
-    public <T> Class<? extends T> getApiImplByName(Class<T> requiredType, String name, long version) {
-        return getApiImpl(requiredType, name, version, false);
-    }
-
-    public <T> Class<? extends T> getApiImplByRegex(Class<T> requiredType, String regex) {
-        return getApiImplByRegex(requiredType, regex, 0);
-    }
-
-    public <T> Class<? extends T> getApiImplByRegex(Class<T> requiredType, String regex, long version) {
-        return getApiImpl(requiredType, regex, version, true);
-    }
-
-    public <T> Class<? extends T> getApiImpl(Class<T> requiredType, String name, long version, boolean useRegex) {
-        return findApiImpl(name, version, requiredType, useRegex);
-    }
-
-    public <T> T getApi(Class<T> requiredType) {
+    public <T> Class<? extends T> getApi(Class<T> requiredType) {
         return getApi(requiredType, null, 0, false);
     }
 
-    public <T> T getApiByName(Class<T> requiredType, String name) {
-        return getApiByName(requiredType, name, 0);
+    public <T> Class<? extends T> getApi(Class<T> requiredType, long version) {
+        return getApi(requiredType, null, version, false);
     }
 
-    public <T> T getApiByName(Class<T> requiredType, String name, long version) {
-        return getApi(requiredType, name, version, false);
+    public <T> Class<? extends T> getApi(Class<T> requiredType, String name, long version, boolean useRegex) {
+        return findApiImpl(requiredType, name, version, useRegex);
     }
 
-    public <T> T getApiByRegex(Class<T> requiredType, String regex) {
-        return getApiByRegex(requiredType, regex, 0);
+    public <T> T getImpl(Class<T> requiredType) {
+        return getImpl(requiredType, null, 0, false);
     }
 
-    public <T> T getApiByRegex(Class<T> requiredType, String regex, long version) {
-        return getApi(requiredType, regex, version, true);
+    public <T> T getImpl(Class<T> requiredType, long version) {
+        return getImpl(requiredType, null, version, false);
     }
 
-    public <T> T getApi(Class<T> requiredType, String name, long version, boolean useRegex) {
-        String key = convertKey(name, requiredType);
+    public <T> T getImpl(Class<T> requiredType, String name, long version, boolean useRegex) {
+        T impl = hasApi(requiredType, name, version);
+        if (impl != null) return impl;
+        Class<? extends T> implClass = findApiImpl(requiredType, name, version, useRegex);
+        if (implClass == null) {
+            if (!Modifier.isAbstract(requiredType.getModifiers())) {
+                implClass = requiredType;
+            }
+        }
+        impl = createApiImpl(implClass);
+        synchronized (mSingletonBeans) {
+            mSingletonBeans.put(convertKey(requiredType, name, version), impl);
+        }
+        return impl;
+    }
+
+    public <T> T hasApi(Class<T> requiredType, String name, long version) {
+        String key = convertKey(requiredType, name, version);
         synchronized (mSingletonBeans) {
             if (mSingletonBeans.containsKey(key)) {
+                //noinspection unchecked
                 return (T) mSingletonBeans.get(key);
             }
         }
-        Class<? extends T> impl = findApiImpl(name, version, requiredType, useRegex);
-        if (impl == null) {
-            if (!Modifier.isAbstract(requiredType.getModifiers())) {
-                impl = requiredType;
-            }
-        }
-        T api = createApiImpl(impl);
-        synchronized (mSingletonBeans) {
-            mSingletonBeans.put(key, api);
-        }
-        return api;
+        return null;
     }
 
-    public <T> T newApiImpl(Class<T> api) {
+    public <T> T hasApi(Class<T> requiredType) {
+        T t = hasApi(requiredType, null, 0);
+        if (t != null) {
+            return t;
+        }
+        String key = convertKey(requiredType, null, 0);
+        synchronized (mSingletonBeans) {
+            for (Object obj : mSingletonBeans.values()) {
+                if (requiredType.isInstance(obj)) {
+                    //noinspection unchecked
+                    t = (T) obj;
+                    mSingletonBeans.put(key, t);
+                    return t;
+                }
+            }
+        }
+        return null;
+    }
+
+    public <T> T newApi(Class<T> api, String name, long version) {
         Class<? extends T> impl;
         if (Modifier.isAbstract(api.getModifiers())) {
-            impl = findApiImpl(null, 0, api, false);
+            impl = findApiImpl(api, name, version, false);
         } else {
             impl = api;
         }
         return createApiImpl(impl);
     }
 
-    private String convertKey(String name, Class<?> type) {
+
+    private String convertKey(Class<?> type, String name, long version) {
         String key = type.getSimpleName();
-        if (TextUtils.isEmpty(name)) {
-            return key;
+        if (TextUtils.isEmpty(name) || key.equalsIgnoreCase(name)) {
+            return key + "$$" + version;
         }
-        if (key.equalsIgnoreCase(name)) {
-            return key;
-        }
-        return key + "#" + name;
+        return key + "$" + name + "$" + version;
     }
 
-    private <T> Class<? extends T> findApiImpl(String name, long version, Class<T> apiClass, boolean useRegex) {
+
+    private <T> T createApiImpl(Class<? extends T> impl) {
+        if (impl == null) {
+            return null;
+        }
+        T obj = null;
+        try {
+            obj = impl.newInstance();
+        } catch (Exception ex) {
+
+        }
+        if (obj instanceof ApiContextAware) {
+            ((ApiContextAware) obj).setApiContextAware(this);
+        }
+        return obj;
+    }
+
+
+    private <T> Class<? extends T> findApiImpl(Class<T> apiClass, String name, long version, boolean useRegex) {
         List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> imps = filterApiImpls(apiClass);
         if (!TextUtils.isEmpty(name)) {
             imps = filterApiImplsByNameAndRegex(name, imps, useRegex);
         }
         return filterApiImplByVersion(version, imps);
+    }
+
+    private <T> List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> filterApiImplsByNameAndRegex(String name, List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> apiImps, boolean useRegex) {
+        List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> temp = new ArrayList<>();
+        for (Map.Entry<Class<? extends T>, ApiImpls.NameVersion> imp : apiImps) {
+            if (imp.getValue() == null) continue;
+            if (!useRegex && name.equals(imp.getValue().getName())) {
+                temp.add(imp);
+            } else if (useRegex && Pattern.matches(name, imp.getValue().getName())) {
+                temp.add(imp);
+            }
+        }
+        return temp;
     }
 
     private <T> List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> filterApiImpls(Class<T> requiredType) {
@@ -235,7 +297,7 @@ public class AtomApi {
                     if (value != null) {
                         name = value.getName();
                         if (!name.isEmpty()) {
-                            enabled = isImplEnabled(name);
+                            enabled = getImplEnabled(name);
                             if (enabled != null && !enabled) {
                                 continue;
                             }
@@ -268,130 +330,8 @@ public class AtomApi {
         return null;
     }
 
-    private <T> List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> filterApiImplsByNameAndRegex(String name, List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> apiImps, boolean useRegex) {
-        List<Map.Entry<Class<? extends T>, ApiImpls.NameVersion>> temp = new ArrayList<>();
-        for (Map.Entry<Class<? extends T>, ApiImpls.NameVersion> imp : apiImps) {
-            if (imp.getValue() == null) continue;
-            if (!useRegex && name.equals(imp.getValue().getName())) {
-                temp.add(imp);
-            } else if (useRegex && Pattern.matches(name, imp.getValue().getName())) {
-                temp.add(imp);
-            }
-        }
-        return temp;
-    }
 
-    private <T> T createApiImpl(Class<? extends T> impl) {
-        if (impl == null) {
-            return null;
-        }
-        T obj = null;
-        try {
-            obj = impl.newInstance();
-        } catch (Exception ex) {
-
-        }
-        if (obj instanceof ApiContextAware) {
-            ((ApiContextAware) obj).setApiContextAware(this);
-        }
-        return obj;
-    }
-
-    public <T> T hasApi(Class<T> requiredType) {
-        T api = hasApi(requiredType, "");
-        if (api != null) {
-            return api;
-        }
-        api = hasApi(requiredType, requiredType.getSimpleName());
-        if (api != null) {
-            return api;
-        }
-        String key = convertKey("", requiredType);
-        synchronized (mSingletonBeans) {
-            for (Object obj : mSingletonBeans.values()) {
-                if (requiredType.isInstance(obj)) {
-                    //noinspection unchecked
-                    api = (T) obj;
-                    mSingletonBeans.put(key, api);
-                    return api;
-                }
-            }
-        }
-        return null;
-    }
-
-    public <T> T hasApi(Class<T> requiredType, String name) {
-        if (name == null) {
-            name = "";
-        }
-        String key = convertKey(name, requiredType);
-        synchronized (mSingletonBeans) {
-            if (mSingletonBeans.containsKey(key)) {
-                //noinspection unchecked
-                return (T) mSingletonBeans.get(key);
-            }
-        }
-        return null;
-    }
-
-    public <T> T newApi(Class<T> api) {
-        Class<? extends T> impl;
-        if (Modifier.isAbstract(api.getModifiers())) {
-            impl = findApiImpl(null, 0, api, false);
-        } else {
-            impl = api;
-        }
-        return createApiImpl(impl);
-    }
-
-    public Context getAppContext() {
-        return mApplication;
-    }
-
-    public String getString(int id) {
-        return mApplication.getString(id);
-    }
-
-    public Bitmap getBitmap(int id) {
-        return BitmapFactory.decodeResource(mApplication.getResources(), id);
-    }
-
-    public Bitmap decodeAssets(String path) {
-        InputStream localInputStream = null;
-        try {
-            AssetManager am = mApplication.getAssets();
-            localInputStream = am.open(path);
-            return BitmapFactory.decodeStream(localInputStream);
-        } catch (IOException ex) {
-            throw new IllegalArgumentException(ex);
-        } finally {
-            if (localInputStream != null) {
-                try {
-                    localInputStream.close();
-                } catch (IOException ignored) {
-                }
-            }
-        }
-    }
-
-    @NonNull
-    public AtomApi setUIThreadHandler(AtomApi.UIThreadHandler uiThreadHandler) {
-        this.mUIThreadHandler = uiThreadHandler;
-        return this;
-    }
-
-    @NonNull
-    public AtomApi setIOThreadHandler(AtomApi.IOThreadHandler ioThreadHandler) {
-        this.mIOThreadHandler = ioThreadHandler;
-        return this;
-    }
-
-    @NonNull
-    public AtomApi setExceptionHandler(AtomApi.ExceptionHandler exceptionHandler) {
-        this.mExceptionHandler = exceptionHandler;
-        return this;
-    }
-
+    /*缓存*/
     @NonNull
     public String cachePut(@NonNull Object data) {
         if (System.currentTimeMillis() - mCachesLastCheckTime > 24 * 3600 * 1000L) {
@@ -444,7 +384,9 @@ public class AtomApi {
         }
     }
 
-    public void enableImpl(@NonNull String name, Boolean enable) {
+    /*预设api 是否能够获得*/
+
+    public void setImplEnabled(@NonNull String name, Boolean enable) {
         name = name.trim();
         synchronized (mEnabledImpls) {
             if (enable == null) {
@@ -464,7 +406,7 @@ public class AtomApi {
         }
     }
 
-    public Boolean isImplEnabled(@NonNull String name) {
+    public Boolean getImplEnabled(@NonNull String name) {
         synchronized (mEnabledImpls) {
             if (mEnabledImpls.contains(name)) {
                 return true;
@@ -476,6 +418,54 @@ public class AtomApi {
         return null;
     }
 
+    /*方法拓展,可以方便的使用getString getResources等*/
+    public Context getAppContext() {
+        return mApplication;
+    }
+
+    public String getString(int id) {
+        return mApplication.getString(id);
+    }
+
+    public Bitmap getBitmap(int id) {
+        return BitmapFactory.decodeResource(mApplication.getResources(), id);
+    }
+
+    public Bitmap decodeAssets(String path) {
+        InputStream localInputStream = null;
+        try {
+            AssetManager am = mApplication.getAssets();
+            localInputStream = am.open(path);
+            return BitmapFactory.decodeStream(localInputStream);
+        } catch (IOException ex) {
+            throw new IllegalArgumentException(ex);
+        } finally {
+            if (localInputStream != null) {
+                try {
+                    localInputStream.close();
+                } catch (IOException ignored) {
+                }
+            }
+        }
+    }
+
+    @NonNull
+    public AtomApi setUIThreadHandler(AtomApi.UIThreadHandler uiThreadHandler) {
+        this.mUIThreadHandler = uiThreadHandler;
+        return this;
+    }
+
+    @NonNull
+    public AtomApi setIOThreadHandler(AtomApi.IOThreadHandler ioThreadHandler) {
+        this.mIOThreadHandler = ioThreadHandler;
+        return this;
+    }
+
+    @NonNull
+    public AtomApi setExceptionHandler(AtomApi.ExceptionHandler exceptionHandler) {
+        this.mExceptionHandler = exceptionHandler;
+        return this;
+    }
 
     public boolean post(@NonNull Runnable action) {
         return mUIThreadHandler != null && mUIThreadHandler.post(action);

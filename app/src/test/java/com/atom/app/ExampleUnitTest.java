@@ -2,6 +2,8 @@ package com.atom.app;
 
 import org.junit.Test;
 
+import java.util.regex.Pattern;
+
 import static org.junit.Assert.*;
 
 /**
@@ -13,6 +15,19 @@ public class ExampleUnitTest {
 
     @Test
     public void addition_isCorrect() {
-        assertEquals(4, 2 + 2);
+        boolean asd = Pattern.matches("hello(.*)", "hello123123123");
+        System.out.println(asd);
+
+        String Str = new String("www.runoob.com");
+
+        System.out.print("返回值 :" );
+
+        System.out.println(Pattern.matches("(.*)runoob(.*)", Str));
+
+        System.out.print("返回值 :" );
+        System.out.println(Pattern.matches("(.*)google(.*)", Str));
+
+        System.out.print("返回值 :" );
+        System.out.println(Pattern.matches("www(.*)", Str));
     }
 }

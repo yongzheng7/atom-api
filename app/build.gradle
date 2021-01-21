@@ -47,5 +47,7 @@ dependencies {
     implementation project(':data')
 
     implementation project(':atom-runtime')
-    annotationProcessor project(':atom-compiler')
+    //annotationProcessor project(':atom-compiler')
+    //implementation 'com.atom.api:atom-runtime:1.0.7'
+    annotationProcessor 'com.atom.plugin:atom-compiler:1.0.6'
 }

@@ -44,4 +44,6 @@ dependencies {
 
     api project(':api')
     annotationProcessor project(':atom-compiler')
+
+    //annotationProcessor 'com.atom.plugin:atom-compiler:1.0.6'
 }
