@@ -7,6 +7,83 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
+            <TextView
+                android:id="@+id/hello"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Hello ATOM APT BY API"
+                android:textSize="30dp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="3dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="10dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="AtomImpl 测试"
+                    android:textSize="25dp" />
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="5dp" />
+
+                <TextView
+                    android:id="@+id/show_msg"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="5dp" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="10dp">
+
+                    <TextView
+                        android:id="@+id/test_class_impl_api"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="测试_获取实现接口Api的子类的实现[api]"
+                        android:textSize="20dp" />
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="20dp" />
+
+                    <TextView
+                        android:id="@+id/test_class_impl_api_version"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="测试_获取实现接口Api的子类的实现[api , version]"
+                        android:textSize="20dp" />
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="20dp" />
+
+                    <TextView
+                        android:id="@+id/test_class_impl_all"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="测试_获取实现接口Api的子类的实现,[api , name , version  ,userag]"
+                        android:textSize="20dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/print_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+        </LinearLayout>
     </ScrollView>
 </FrameLayout>

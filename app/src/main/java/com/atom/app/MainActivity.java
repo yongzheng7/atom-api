@@ -20,7 +20,7 @@ public class MainActivity extends AbstractActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        AbstractFragment apiByName = apiImplContext().getImpl(AbstractFragment.class, "main/menu/api" , 0 , false);
+        AbstractFragment apiByName = apiImplContext().getImpl(AbstractFragment.class, "main/menu/impl" , 0 , false);
         loadFragment(apiByName , true);
     }
 
