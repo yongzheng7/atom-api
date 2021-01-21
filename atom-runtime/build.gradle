@@ -31,10 +31,8 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
-    //annotationProcessor project(':atom-compiler')
-    //api project(':atom-annotation')
-    annotationProcessor 'com.atom.plugin:atom-compiler:1.0.6'
-    api 'com.atom.plugin:atom-annotation:1.0.6'
+    annotationProcessor 'com.atom.plugin:atom-compiler:2.0.0'
+    api 'com.atom.plugin:atom-annotation:2.0.0'
 }
 
 
@@ -45,7 +43,7 @@ apply plugin: 'com.jfrog.bintray'
 
 // Bintray 相关的信息
 group = 'com.atom.api' // groupId
-version = '1.0.7' // 版本号
+version = '2.0.0' // 版本号
 
 def baseUrl = 'https://github.com/yongzheng7'
 def siteUrl = baseUrl

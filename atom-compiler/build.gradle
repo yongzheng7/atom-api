@@ -2,8 +2,7 @@ apply plugin: 'java'
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    //implementation project(':atom-annotation')
-    implementation 'com.atom.plugin:atom-annotation:1.0.6'
+    implementation 'com.atom.plugin:atom-annotation:2.0.0'
     annotationProcessor 'com.google.auto.service:auto-service:1.0-rc7'
     compileOnly 'com.google.auto.service:auto-service-annotations:1.0-rc7'
 
@@ -33,7 +32,7 @@ def issueUrl = "${gitUrl}/issues"
 
 // 指定group
 group='com.atom.plugin'
-version ='1.0.6' // 版本
+version ='2.0.0' // 版本
 //---------------------------------------------
 
 

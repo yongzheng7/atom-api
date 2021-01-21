@@ -14,4 +14,5 @@ import java.util.Objects;
 
 @Impl(api = AbstractFragment.class, name = "main/menu/cache")
 public class TestAtomCacheFragment extends AbstractFragment {
+
 }
