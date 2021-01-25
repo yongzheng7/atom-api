@@ -27,7 +27,7 @@ public abstract class AbstractActivity extends FragmentActivity implements Activ
 
     @Override
     public AtomApi apiImplContext() {
-        AtomApi init = AtomApi.init();
+        AtomApi init = AtomApi.getInstance();
         if (init != null) {
             return init;
         }

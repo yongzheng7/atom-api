@@ -19,8 +19,8 @@
         </activity>
 
         <meta-data
-            android:name="com.atom.app"
-            android:value="com.atom.app.ApiBundleImpls" />
+            android:name="com.atom.apt.proxy.app"
+            android:value="com.atom.apt.proxy.AtomAppProxy" />
     </application>
 
 </manifest>

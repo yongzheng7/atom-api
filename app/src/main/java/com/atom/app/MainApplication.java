@@ -21,7 +21,7 @@ public class MainApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        AtomApi.init(this)
+        AtomApi.newInstance(this , false)
         .setIOThreadHandler(new AtomApi.IOThreadHandler() {
             @Override
             public void execute(Runnable command) {

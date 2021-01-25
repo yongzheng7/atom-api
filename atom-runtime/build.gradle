@@ -43,7 +43,7 @@ apply plugin: 'com.jfrog.bintray'
 
 // Bintray 相关的信息
 group = 'com.atom.api' // groupId
-version = '2.0.0' // 版本号
+version = '3.0.0' // 版本号
 
 def baseUrl = 'https://github.com/yongzheng7'
 def siteUrl = baseUrl

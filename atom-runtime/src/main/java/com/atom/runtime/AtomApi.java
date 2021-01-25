@@ -2,6 +2,8 @@ package com.atom.runtime;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -13,7 +15,6 @@ import androidx.annotation.Nullable;
 
 import com.atom.annotation.bean.ApiImpls;
 
-import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
@@ -63,26 +64,51 @@ public class AtomApi {
         boolean accept(Class<? extends T> clazz, ApiImpls.NameVersion param);
     }
 
-    private static class SingletonInner {
-        private static AtomApi singletonStaticInner = new AtomApi();
-    }
-
-    public static AtomApi init(Application application) {
-        AtomApi init = init();
-        init.mApplication = application;
-        return init;
-    }
-
-    public static AtomApi init() {
-        return SingletonInner.singletonStaticInner;
-    }
-
     private static final Set<Class<? extends ApiImpls>> registerClass = new HashSet<>();
 
+    private static final String META_DATA_NAME = "com.atom.apt.proxy";
+
+    private static volatile AtomApi singleTon = null;
+
+    public static AtomApi getInstance() {
+        return singleTon;
+    }
+
+    public static AtomApi newInstance(Application application, boolean loadPlugin) {
+        if (singleTon == null) {
+            synchronized (AtomApi.class) {
+                if (singleTon == null) {
+                    singleTon = new AtomApi(application , loadPlugin);
+                }
+            }
+        }
+        return singleTon;
+    }
+
     private static void loadProxyClass() {
+
+    }
+
+    private static void loadProxyClassByManifest(Application application) {
+        if (application == null) {
+            throw new RuntimeException("Application is NULL");
+        }
+        ApplicationInfo appInfo;
+        try {
+            appInfo = application.getPackageManager().getApplicationInfo(application.getPackageName(), PackageManager.GET_META_DATA);
+        } catch (PackageManager.NameNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        for (String key : appInfo.metaData.keySet()) {
+            if (!key.startsWith(META_DATA_NAME)) {
+                continue;
+            }
+            registerClass(appInfo.metaData.getString(key, null));
+        }
     }
 
     private static void registerClass(String className) {
+        Log.e("register class ", Objects.requireNonNull(className));
         if (!TextUtils.isEmpty(className)) {
             try {
                 Class<?> clazz = Class.forName(className);
@@ -95,7 +121,7 @@ public class AtomApi {
         }
     }
 
-    private Application mApplication;
+    private final Application mApplication;
     private AtomApi.UIThreadHandler mUIThreadHandler;
     private AtomApi.IOThreadHandler mIOThreadHandler;
     private AtomApi.ExceptionHandler mExceptionHandler;
@@ -107,8 +133,13 @@ public class AtomApi {
     private final List<ApiImpls> mApiImpls = new LinkedList<>();
     private long mCachesLastCheckTime = System.currentTimeMillis();
 
-    private AtomApi() {
-        loadProxyClass();
+    private AtomApi(Application application, boolean isLoadPlugin) {
+        this.mApplication = application;
+        if (isLoadPlugin) {
+            loadProxyClass();
+        } else {
+            loadProxyClassByManifest(mApplication);
+        }
         loadPackages();
     }
 
