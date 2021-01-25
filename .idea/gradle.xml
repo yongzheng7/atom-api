@@ -16,6 +16,7 @@
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/atom-annotation" />
             <option value="$PROJECT_DIR$/atom-compiler" />
+            <option value="$PROJECT_DIR$/atom-core" />
             <option value="$PROJECT_DIR$/atom-plugin" />
             <option value="$PROJECT_DIR$/atom-runtime" />
             <option value="$PROJECT_DIR$/data" />

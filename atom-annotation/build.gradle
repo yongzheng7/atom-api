@@ -19,12 +19,12 @@ apply plugin: 'java-library'
 
 def baseUrl = 'https://github.com/yongzheng7'
 def siteUrl = baseUrl
-def gitUrl = "${baseUrl}/api_plugin"
+def gitUrl = "${baseUrl}/atom_api"
 def issueUrl = "${gitUrl}/issues"
 
 // 指定group
-group='com.atom.plugin'
-version ='2.0.0' // 版本
+group='com.atom.api'
+version ='1.0.0' // 版本
 //---------------------------------------------
 
 
@@ -117,8 +117,8 @@ bintray {
     key =   '4125ea4e0617204dafa1b5fef97d1acf00020e16'
     configurations = ['archives']
     pkg {
-        repo = 'atom_api_plugin' // 上传到中央仓库的名称
-        name = 'atom_api_annotation' // 上传到jcenter 的项目名称
+        repo = 'atom-api' // 上传到中央仓库的名称
+        name = 'api-annotation' // 上传到jcenter 的项目名称
         desc = 'test aop' // 项目描述
         websiteUrl = siteUrl
         issueTrackerUrl = issueUrl
