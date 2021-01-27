@@ -1,5 +1,5 @@
+include ':atom-api'
 include ':atom-core'
-include ':atom-runtime'
 include ':atom-plugin'
 include ':atom-annotation'
 include ':atom-compiler'

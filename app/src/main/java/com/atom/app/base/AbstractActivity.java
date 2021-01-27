@@ -12,7 +12,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.atom.api.core.ui.ActivityApi;
-import com.atom.runtime.AtomApi;
+import com.atom.core.AtomApi;
 
 @SuppressWarnings("unused")
 public abstract class AbstractActivity extends FragmentActivity implements ActivityApi {

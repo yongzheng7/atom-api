@@ -6,7 +6,7 @@ import android.view.KeyEvent;
 
 import androidx.fragment.app.Fragment;
 
-import com.atom.runtime.AtomApi;
+import com.atom.core.AtomApi;
 
 
 public interface ActivityApi {

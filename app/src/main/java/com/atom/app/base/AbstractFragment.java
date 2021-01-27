@@ -5,7 +5,7 @@ import android.app.Activity;
 import androidx.fragment.app.Fragment;
 
 import com.atom.api.core.ui.ActivityApi;
-import com.atom.runtime.AtomApi;
+import com.atom.core.AtomApi;
 
 public abstract class AbstractFragment extends Fragment implements ActivityApi.OnBackPressedListener {
     private String TAG = getClass().getName();

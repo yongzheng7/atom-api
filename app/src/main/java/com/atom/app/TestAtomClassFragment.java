@@ -17,7 +17,7 @@ import com.atom.annotation.Impl;
 import com.atom.annotation.bean.ApiImpls;
 import com.atom.api.app.Hello;
 import com.atom.app.base.AbstractFragment;
-import com.atom.runtime.AtomApi;
+import com.atom.core.AtomApi;
 
 import java.util.ArrayList;
 import java.util.Collection;

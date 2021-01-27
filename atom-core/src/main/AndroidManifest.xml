@@ -1,5 +1,3 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.wyz.runtime">
+<manifest package="com.atom.core">
 
-    /
 </manifest>

@@ -20,10 +20,6 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
 }
 
 dependencies {
@@ -32,7 +28,7 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
-    api project(':atom-api')
+    api 'com.atom.api:atom-annotation:1.0.0'
 }
 
 /*************************** bintray start ***************************/
@@ -42,7 +38,7 @@ apply plugin: 'com.jfrog.bintray'
 
 // Bintray 相关的信息
 group = 'com.atom.api' // groupId
-version = '2.0.0' // 版本号
+version = '1.0.0' // 版本号
 
 def baseUrl = 'https://github.com/yongzheng7'
 def siteUrl = baseUrl
@@ -109,7 +105,7 @@ bintray {
     configurations = ['archives']
     pkg {
         repo = 'atom-api' // 上传到中央仓库的名称
-        name = 'api-core' // 上传到jcenter 的项目名称
+        name = 'api-api' // 上传到jcenter 的项目名称
         desc = 'test aop' // 项目描述
         websiteUrl = siteUrl
         issueTrackerUrl = issueUrl

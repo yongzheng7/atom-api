@@ -6,7 +6,8 @@ import android.os.Looper;
 import android.util.Log;
 
 import com.atom.annotation.Impl;
-import com.atom.runtime.AtomApi;
+import com.atom.core.AtomApi;
+
 
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;

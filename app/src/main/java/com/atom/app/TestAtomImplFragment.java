@@ -12,12 +12,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.atom.annotation.Impl;
-import com.atom.annotation.bean.ApiImpls;
 import com.atom.api.app.Hello;
 import com.atom.app.base.AbstractFragment;
-import com.atom.runtime.AtomApi;
 
-import java.util.Collection;
 
 
 @Impl(api = AbstractFragment.class, name = "main/menu/impl")
